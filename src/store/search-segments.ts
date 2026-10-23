@@ -28,6 +28,9 @@ interface SearchSegmentsState {
   creatorCount: number | null;
   /** 结果页拿到结果集后写入。0 是合法值（无结果），不能用 falsy 判断。 */
   setCounts: (counts: SearchSegmentCounts) => void;
+  /** 单类型结果页各自写入；`null` 表示该类型正在重新搜索、计数未知。 */
+  setVideoCount: (count: number | null) => void;
+  setCreatorCount: (count: number | null) => void;
   /** 离开搜索语境（清空查询词 / 卸载结果页）时归位到「未知」。 */
   reset: () => void;
 }
@@ -36,5 +39,7 @@ export const useSearchSegments = create<SearchSegmentsState>()(set => ({
   videoCount: null,
   creatorCount: null,
   setCounts: ({ video, creator }) => set({ videoCount: video, creatorCount: creator }),
+  setVideoCount: count => set({ videoCount: count }),
+  setCreatorCount: count => set({ creatorCount: count }),
   reset: () => set({ videoCount: null, creatorCount: null }),
 }));

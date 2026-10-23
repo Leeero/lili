@@ -1,0 +1,1097 @@
+/**
+ * 搜索结果页（真实路径，不是 `?fixture=06-search` 的 C+ 夹具）。
+ *
+ * 结构：页头（查询词 + 结果数 + 本地入口）→ 结果类型 tab → 综合（创作者预览 +
+ * 音乐视频）/ 音乐视频 / 创作者。工具条吸顶，视图令牌全部走 4188。
+ */
+.search4188-results-page {
+  width: 100%;
+  padding: 8px 14px 40px 0;
+}
+
+/* ---------- 页头 ---------- */
+.search4188-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 4px 0 16px;
+}
+
+.search4188-heading {
+  min-width: 0;
+}
+
+.search4188-heading h1 {
+  margin: 0;
+  color: var(--lili-4188-text-primary);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.search4188-summary {
+  margin: 6px 0 0;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+}
+
+.search4188-local {
+  display: inline-flex;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  padding: 0 11px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-local:hover {
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-primary);
+}
+
+/* ---------- 结果类型 tab ---------- */
+.search4188-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--lili-4188-border);
+  background: var(--lili-4188-canvas);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.search4188-tab {
+  position: relative;
+  display: inline-flex;
+  height: 44px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-tab:hover {
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-tab.is-active {
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-tab.is-active::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--lili-4188-action);
+  content: "";
+}
+
+.search4188-tab-count {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: var(--lili-4188-radius-pill);
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.search4188-tab.is-active .search4188-tab-count {
+  background: var(--lili-4188-action-soft);
+  color: var(--lili-4188-action);
+}
+
+.search4188-panel {
+  padding-top: 10px;
+}
+
+/* ---------- 综合里的创作者预览 ---------- */
+.search4188-creators {
+  margin: 4px 0 20px;
+}
+
+.search4188-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.search4188-section-head h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--lili-4188-text-primary);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.search4188-section-count {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: var(--lili-4188-radius-pill);
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.search4188-section-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-section-more:hover {
+  color: var(--lili-4188-action);
+}
+
+.search4188-creator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.search4188-creator {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-card);
+  background: var(--lili-4188-surface);
+  color: var(--lili-4188-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    border-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-creator:hover {
+  border-color: var(--lili-4188-border);
+  background: var(--lili-4188-surface-hover);
+}
+
+.search4188-creator.is-skeleton {
+  height: 58px;
+  border-color: transparent;
+  background: var(--lili-4188-surface-hover);
+  animation: search4188-pulse 1.4s ease-in-out infinite;
+}
+
+.search4188-creator-avatar {
+  width: 36px;
+  height: 36px;
+  flex: none;
+}
+
+.search4188-creator-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search4188-creator-name {
+  overflow: hidden;
+  color: var(--lili-4188-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search4188-creator-meta {
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+}
+
+/* ---------- 吸顶工具条 ---------- */
+.search4188-toolbar {
+  position: sticky;
+  top: 45px;
+  z-index: 4;
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--lili-4188-border);
+  background: var(--lili-4188-surface-topbar);
+  backdrop-filter: blur(14px);
+}
+
+.search4188-toolbar-title {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.search4188-toolbar-title h2 {
+  margin: 0;
+  color: var(--lili-4188-text-primary);
+  font-size: 16px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.search4188-toolbar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.search4188-sort-trigger {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-sort-trigger:hover {
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-sort-prefix {
+  color: var(--lili-4188-text-muted);
+}
+
+.search4188-chip {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 11px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-chip:hover {
+  background: var(--lili-4188-surface-hover);
+}
+
+.search4188-chip.is-on {
+  border-color: transparent;
+  background: var(--lili-4188-action-soft);
+  color: var(--lili-4188-action);
+}
+
+.search4188-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+}
+
+.search4188-mode-button {
+  display: grid;
+  width: 28px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-mode-button:hover {
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-mode-button.is-active {
+  background: var(--lili-4188-surface-elevated);
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-playall {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--lili-4188-radius-md);
+  background: var(--lili-4188-action);
+  color: var(--lili-4188-text-primary);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    filter var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    transform var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-playall:hover {
+  filter: brightness(1.08);
+}
+
+.search4188-playall:active {
+  transform: scale(var(--lili-4188-press-scale));
+}
+
+.search4188-playall:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.search4188-playall-count {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: var(--lili-4188-radius-pill);
+  background: color-mix(in srgb, var(--lili-4188-canvas) 24%, transparent);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 视频卡 ---------- */
+.search4188-card-shell {
+  min-width: 0;
+}
+
+.search4188-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search4188-card-cover {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-card);
+  background: var(--lili-4188-surface);
+  transition:
+    border-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    box-shadow var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-card:hover .search4188-card-cover {
+  border-color: var(--lili-4188-text-muted);
+}
+
+.search4188-card.is-current .search4188-card-cover {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--lili-4188-playback);
+}
+
+.search4188-cover-hit {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.search4188-cover-art {
+  width: 100%;
+  height: 100%;
+  transition: transform var(--lili-4188-duration-slow) var(--lili-4188-ease-emphasized);
+}
+
+.search4188-card:hover .search4188-cover-art {
+  transform: scale(1.02);
+}
+
+.search4188-cover-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 54%, var(--lili-4188-image-shade-strong));
+}
+
+.search4188-cover-badges {
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lili-4188-image-on-dark);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.search4188-cover-badges > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.search4188-duration {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--lili-4188-image-chip);
+}
+
+.search4188-playing {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  height: 22px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border-radius: var(--lili-4188-radius-pill);
+  background: var(--lili-4188-playback);
+  color: var(--lili-4188-canvas);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.search4188-playing::before {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentcolor;
+  content: "";
+}
+
+.search4188-quick {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--lili-4188-radius-pill);
+  background: var(--lili-4188-image-chip);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    transform var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-card:hover .search4188-quick,
+.search4188-card:focus-within .search4188-quick {
+  opacity: 1;
+  transform: none;
+}
+
+.search4188-quick-button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lili-4188-image-on-dark);
+  cursor: pointer;
+  transition: background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-quick-button:hover {
+  background: var(--lili-4188-image-shade-soft);
+}
+
+.search4188-card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lili-4188-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  transition: color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-card-title:hover {
+  color: var(--lili-4188-action);
+}
+
+.search4188-card-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+}
+
+.search4188-card-creator {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-card-creator > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search4188-card-creator:hover {
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-card-avatar {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.search4188-card-avatar-fallback {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--lili-4188-action-soft);
+  color: var(--lili-4188-action);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.search4188-card-date {
+  margin-left: auto;
+  flex: none;
+}
+
+.search4188-kebab {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  opacity: 0.65;
+  cursor: pointer;
+  transition:
+    opacity var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-kebab:hover {
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-kebab:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+.search4188-card:hover .search4188-kebab,
+.search4188-card:focus-within .search4188-kebab {
+  opacity: 1;
+}
+
+/* ---------- 加载 / 空态 / 到底 ---------- */
+.search4188-grid-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  padding-top: 6px;
+}
+
+.search4188-card-skeleton {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search4188-card-skeleton-cover {
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--lili-4188-radius-card);
+  background: var(--lili-4188-surface-hover);
+  animation: search4188-pulse 1.4s ease-in-out infinite;
+}
+
+.search4188-card-skeleton-line {
+  display: block;
+  width: 90%;
+  height: 14px;
+  border-radius: 6px;
+  background: var(--lili-4188-surface-hover);
+  animation: search4188-pulse 1.4s ease-in-out infinite;
+}
+
+.search4188-card-skeleton-line.is-short {
+  width: 55%;
+}
+
+.search4188-empty {
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  color: var(--lili-4188-text-muted);
+  text-align: center;
+}
+
+.search4188-empty h3 {
+  margin: 12px 0 0;
+  color: var(--lili-4188-text-primary);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.search4188-empty p {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+
+.search4188-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.search4188-empty-primary,
+.search4188-empty-secondary {
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 14px;
+  border-radius: var(--lili-4188-radius-pill);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.search4188-empty-primary {
+  border: 0;
+  background: var(--lili-4188-action);
+  color: var(--lili-4188-text-primary);
+  font-weight: 600;
+}
+
+.search4188-empty-secondary {
+  border: 1px solid var(--lili-4188-border);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+}
+
+.search4188-empty-secondary:hover {
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-end {
+  margin: 22px 0 0;
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.search4188-more-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+}
+
+.search4188-more-error button {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.search4188-more-error button:hover {
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-more-error button:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+/* 键盘焦点：卡片内部有多个独立按钮，必须逐个可见，不能只靠 hover 露出的
+   快捷条（focus-within 只负责显示操作条，不代替焦点环）。 */
+.search4188-tab:focus-visible,
+.search4188-local:focus-visible,
+.search4188-section-more:focus-visible,
+.search4188-sort-trigger:focus-visible,
+.search4188-chip:focus-visible,
+.search4188-mode-button:focus-visible,
+.search4188-playall:focus-visible,
+.search4188-quick-button:focus-visible,
+.search4188-card-title:focus-visible,
+.search4188-card-creator:focus-visible,
+.search4188-empty-primary:focus-visible,
+.search4188-empty-secondary:focus-visible,
+.search4188-creator:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+.search4188-cover-hit:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: -3px;
+}
+
+/* ---------- 创作者卡 ---------- */
+.search4188-user-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  padding-top: 6px;
+}
+
+.search4188-user-skeleton {
+  display: block;
+  height: 220px;
+  border-radius: var(--lili-4188-radius-card);
+  background: var(--lili-4188-surface-hover);
+  animation: search4188-pulse 1.4s ease-in-out infinite;
+}
+
+.search4188-user-card {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-card);
+  background: var(--lili-4188-surface);
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    border-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-user-card:hover {
+  border-color: var(--lili-4188-border);
+  background: var(--lili-4188-surface-hover);
+}
+
+.search4188-user-open {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.search4188-user-open:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 3px;
+  border-radius: var(--lili-4188-radius-sm);
+}
+
+.search4188-user-avatar-wrap {
+  position: relative;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.search4188-user-avatar {
+  width: 64px;
+  height: 64px;
+}
+
+.search4188-user-verify {
+  position: absolute;
+  right: -3px;
+  bottom: 2px;
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--lili-4188-action);
+  color: var(--lili-4188-canvas);
+  box-shadow: 0 0 0 2px var(--lili-4188-surface);
+}
+
+.search4188-user-level {
+  position: absolute;
+  right: -8px;
+  bottom: -2px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--lili-4188-favorite);
+  color: var(--lili-4188-canvas);
+  font-size: 9px;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.search4188-user-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--lili-4188-text-primary);
+  font-size: 15px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search4188-user-fans {
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+}
+
+.search4188-user-sign {
+  display: -webkit-box;
+  min-height: 34px;
+  overflow: hidden;
+  color: var(--lili-4188-text-secondary);
+  font-size: 11px;
+  line-height: 1.55;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.search4188-follow {
+  display: inline-flex;
+  height: 30px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 15px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.search4188-follow:hover {
+  background: var(--lili-4188-surface-elevated);
+  color: var(--lili-4188-text-primary);
+}
+
+.search4188-follow.is-followed {
+  border-color: transparent;
+  background: var(--lili-4188-action-soft);
+  color: var(--lili-4188-action);
+}
+
+.search4188-follow:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@keyframes search4188-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------- 响应式 ---------- */
+@media (width <= 640px) {
+  .search4188-results-page {
+    padding: 8px 0 28px;
+  }
+
+  .search4188-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .search4188-heading h1 {
+    font-size: 22px;
+  }
+
+  .search4188-local {
+    height: 30px;
+  }
+
+  .search4188-tabs {
+    gap: 20px;
+  }
+
+  .search4188-toolbar {
+    position: static;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0 10px;
+  }
+
+  .search4188-toolbar-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* 窄屏优先保住「排序 / 分区 / 播放全部」；网格/列表沿用设置里的 displayMode，
+     把视图切换收起来可以少占一行，首屏能多露出一行结果。 */
+  .search4188-mode {
+    display: none;
+  }
+
+  .search4188-playall {
+    margin-left: auto;
+  }
+
+  .search4188-creator-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search4188-user-skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search4188-user-card {
+    padding: 12px;
+  }
+}
+
+@media (hover: none) {
+  .search4188-quick {
+    display: none;
+  }
+
+  .search4188-kebab {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search4188-cover-art,
+  .search4188-quick,
+  .search4188-card-cover,
+  .search4188-playall {
+    transition: none;
+  }
+
+  .search4188-card-skeleton-cover,
+  .search4188-card-skeleton-line,
+  .search4188-creator.is-skeleton,
+  .search4188-user-skeleton {
+    animation: none;
+  }
+}

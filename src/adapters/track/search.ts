@@ -2,6 +2,7 @@ import type { Track } from "@/domain/track";
 import type { SearchVideoItem } from "@/service/web-interface-search-type";
 
 import { stripHtml } from "@/common/utils/str";
+import { formatUrlProtocol } from "@/common/utils/url";
 
 const parseDuration = (value?: string | number) => {
   if (typeof value === "number") return value;
@@ -15,7 +16,7 @@ export const adaptSearchVideoToTrack = (item: SearchVideoItem): Track => ({
   id: `bilibili-video:${item.bvid}`,
   source: "bilibili-video",
   title: stripHtml(item.title),
-  cover: item.pic,
+  cover: formatUrlProtocol(item.pic),
   creator: { id: String(item.mid), name: item.author },
   duration: parseDuration(item.duration),
   playCount: item.play,

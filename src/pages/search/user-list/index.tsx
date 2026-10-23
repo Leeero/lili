@@ -1,10 +1,12 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import { Spinner, addToast } from "@heroui/react";
+import { RiSearchEyeLine } from "@remixicon/react";
 
 import VirtualGridPageList from "@/components/virtual-grid-page-list";
 import { getRelationRelations } from "@/service/relation-relations";
 import { getWebInterfaceWbiSearchType, type SearchUserItem } from "@/service/web-interface-search-type";
+import { useSearchSegments } from "@/store/search-segments";
+import { PageState } from "@/ui/states/page-state";
 
 import SearchHeader from "./search-header";
 import UserCard from "./user-card";
@@ -15,13 +17,28 @@ interface UserListProps {
   getScrollElement: () => HTMLElement | null;
 }
 
+const SKELETON_COUNT = 4;
+
+const UserGridSkeleton = () => (
+  <div className="search4188-user-skeleton-grid" role="status" aria-label="正在加载创作者">
+    {Array.from({ length: SKELETON_COUNT }, (_, index) => (
+      <span key={index} className="search4188-user-skeleton" />
+    ))}
+  </div>
+);
+
+/** 创作者完整列表：关注状态、分页与排序都在这里；结果数写回 `useSearchSegments`。 */
 export default function UserList({ keyword, getScrollElement }: UserListProps) {
+  const setCreatorCount = useSearchSegments(state => state.setCreatorCount);
   const [list, setList] = useState<SearchUserItemWithRelation[]>([]);
   const [sortKey, setSortKey] = useState<UserSortKey>("default");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [initialLoading, setInitialLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
+  const [error, setError] = useState(false);
+  const requestSeq = useRef(0);
 
   const fetchPage = useCallback(
     async (pn: number) => {
@@ -63,68 +80,101 @@ export default function UserList({ keyword, getScrollElement }: UserListProps) {
   );
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMore || !hasMore || initialLoading) return;
+    const seq = requestSeq.current;
     try {
       setLoadingMore(true);
+      setLoadMoreError(false);
       const nextPage = page + 1;
       const { items, total } = await fetchPage(nextPage);
+      if (seq !== requestSeq.current) return;
       setList(prev => {
-        const newList = [...prev, ...items];
-        setHasMore(newList.length < total);
-        return newList;
+        const nextList = [...prev, ...items];
+        setHasMore(nextList.length < total);
+        return nextList;
       });
       setPage(nextPage);
     } catch {
-      addToast({ title: "加载更多失败", color: "danger" });
+      if (seq === requestSeq.current) setLoadMoreError(true);
     } finally {
-      setLoadingMore(false);
+      if (seq === requestSeq.current) setLoadingMore(false);
     }
-  }, [page, loadingMore, hasMore, fetchPage]);
+  }, [page, loadingMore, hasMore, initialLoading, fetchPage]);
+
+  const retryLoadMore = () => {
+    setLoadMoreError(false);
+    void loadMore();
+  };
 
   const retryInitial = useCallback(async () => {
     if (!keyword) return;
+    const seq = ++requestSeq.current;
     setInitialLoading(true);
+    setError(false);
+    setLoadMoreError(false);
     setList([]);
     setPage(1);
     setHasMore(true);
     try {
       const { items, total } = await fetchPage(1);
+      if (seq !== requestSeq.current) return;
       setList(items);
       setHasMore(items.length < total);
+      setCreatorCount(total);
     } catch {
-      addToast({ title: "加载失败", color: "danger" });
+      if (seq !== requestSeq.current) return;
+      setError(true);
     } finally {
-      setInitialLoading(false);
+      if (seq === requestSeq.current) setInitialLoading(false);
     }
-  }, [fetchPage, keyword]);
+  }, [fetchPage, keyword, setCreatorCount]);
 
   useEffect(() => {
-    retryInitial();
+    void retryInitial();
+    return () => {
+      requestSeq.current += 1;
+    };
   }, [retryInitial]);
-
-  if (initialLoading) {
-    return (
-      <div className="flex min-h-[280px] items-center justify-center">
-        <Spinner label="加载中" />
-      </div>
-    );
-  }
-
-  const renderItem = (u: SearchUserItemWithRelation) => <UserCard key={u.mid} u={u} />;
 
   return (
     <>
       <SearchHeader sortKey={sortKey} onSortChange={setSortKey} />
-      <VirtualGridPageList
-        items={list}
-        itemKey="mid"
-        renderItem={renderItem}
-        getScrollElement={getScrollElement}
-        onLoadMore={loadMore}
-        hasMore={hasMore}
-        loading={loadingMore}
-        rowHeight={240}
-      />
+
+      {initialLoading && <UserGridSkeleton />}
+
+      {!initialLoading && error && (
+        <PageState kind="error" actionLabel="重新加载" onAction={() => void retryInitial()} className="min-h-[320px]" />
+      )}
+
+      {!initialLoading && !error && list.length === 0 && (
+        <div className="search4188-empty">
+          <RiSearchEyeLine size={30} aria-hidden="true" />
+          <h3>没有找到相关创作者</h3>
+          <p>换一个关键词，或者回到「音乐视频」看看。</p>
+        </div>
+      )}
+
+      {!initialLoading && !error && list.length > 0 && (
+        <VirtualGridPageList
+          items={list}
+          itemKey="mid"
+          renderItem={user => <UserCard key={user.mid} u={user} />}
+          getScrollElement={getScrollElement}
+          onLoadMore={loadMore}
+          hasMore={hasMore}
+          loading={loadingMore}
+          rowHeight={240}
+        />
+      )}
+
+      {!initialLoading && !error && loadMoreError && (
+        <div className="search4188-more-error" role="alert">
+          <span>加载更多失败</span>
+          <button type="button" onClick={retryLoadMore}>
+            重试
+          </button>
+        </div>
+      )}
     </>
   );
 }
