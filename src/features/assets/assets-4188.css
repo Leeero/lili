@@ -6,6 +6,28 @@
   padding: 8px 14px 48px 0;
 }
 
+/* 瓦片悬停底板的外扩画布（只给「我的音乐」的滚动容器挂这个类）。
+ *
+ * 底板靠 padding / 负 margin 向四周外扩 --asset4188-card-halo，但滚动视口
+ * 只到内容盒边缘：第一列卡片的底板左缘整个落在视口外面，12px 外扩全被裁掉
+ * —— 悬停时看起来像内容紧贴左缘、底板从文字上「切」出来（右列有滚动条预留
+ * 的 14px 兜着，所以只有左边露馅）。
+ *
+ * 这里把视口左右各让出 halo 的宽度，再由下面这条页面内边距把静态落点原样
+ * 补回去 —— 标题、统计卡、封面、列宽都不动，变的只是底板有了可以外扩的空间。 */
+.asset4188-scroll {
+  --asset4188-card-halo: 12px;
+
+  /* 宽度显式加两倍 halo：只靠负 margin 时，盒子一旦带着 w-full（width:100%）
+     就只会整体左移、右缘反而少一截。这里不依赖调用方的宽度类。 */
+  width: calc(100% + 2 * var(--asset4188-card-halo));
+  margin-inline: calc(-1 * var(--asset4188-card-halo));
+}
+
+.asset4188-scroll .asset4188-page {
+  padding: 8px calc(14px + var(--asset4188-card-halo)) 48px var(--asset4188-card-halo);
+}
+
 .asset4188-head {
   display: flex;
   align-items: flex-end;
@@ -40,6 +62,34 @@
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* 无页头页面：tab 与操作共用一行（tab 左、操作右），不再多占一行；
+   页面名只留给壳层与读屏。 */
+.asset4188-page-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.asset4188-page-bar-tabs {
+  min-width: 0;
+}
+
+/* 新工具条里的主操作统一实心强调色，和搜索/榜单的「播放全部」同一视觉层级；
+   页头夹具仍保留原来的柔和强调，不受影响。 */
+.asset4188-page-bar .asset4188-actions button.is-primary,
+.asset4188-page-bar .asset4188-actions button.is-primary:hover {
+  border-color: transparent;
+  background: var(--lili-4188-action);
+  color: var(--lili-4188-text-primary);
+}
+
+.asset4188-page-bar .asset4188-actions button.is-primary:hover {
+  filter: brightness(1.08);
 }
 
 .asset4188-actions button {
@@ -77,36 +127,6 @@
   opacity: 0.6;
 }
 
-/* 原型 .library-stats / .stat：4 列，卡片 15px 内边距/14px 圆角，数字 19px 等宽。
-   margin-top：tabs 下划线槽与卡片上缘之间留 10px 呼吸感（下划线容器自带 mb-5，
-   但其底边线到卡片边框原间距不足，见审查记录）。 */
-.asset4188-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-top: 10px;
-  margin-bottom: 22px;
-}
-
-.asset4188-stats span {
-  display: block;
-  padding: 15px;
-  border: 1px solid var(--lili-4188-border);
-  border-radius: 14px;
-  color: var(--lili-4188-text-muted);
-  background: var(--lili-4188-surface);
-  font-size: 10px;
-}
-
-.asset4188-stats b {
-  display: block;
-  margin-top: 5px;
-  color: var(--lili-4188-text-primary);
-  font-family: var(--lili-4188-font-numeric);
-  font-size: 19px;
-  font-weight: 500;
-}
-
 .asset4188-section {
   margin-top: 28px;
 }
@@ -129,11 +149,17 @@
   gap: 18px 14px;
 }
 
+/* 悬停底板的内边距：**padding 与负 margin 必须等值**。
+   两者抵消后，封面与文案的落点完全不随取值变化（正常态没有任何位移），
+   变的只有悬停时露出的底板尺寸 —— 也就是「内容离背景边缘多远」。
+   取 5px 时文字几乎贴着底板（5px + 1px 描边），视觉上像被裁切；
+   12px 让底板读成一层面板而不是一圈描边。外扩所需的空间由
+   .asset4188-scroll 让出（见文件顶部），网格间距不用跟着放大。 */
 .asset4188-card {
   position: relative;
   min-width: 0;
-  padding: 5px;
-  margin: -5px;
+  padding: var(--asset4188-card-halo, 12px);
+  margin: calc(-1 * var(--asset4188-card-halo, 12px));
   border: 1px solid transparent;
   border-radius: var(--lili-4188-radius-card);
   background: transparent;
@@ -236,8 +262,6 @@
 .asset4188-card-actions button,
 .asset4188-row-actions button {
   display: grid;
-  width: 30px;
-  height: 30px;
   place-items: center;
   border: 0;
   border-radius: 50%;
@@ -246,13 +270,39 @@
   cursor: pointer;
 }
 
+.asset4188-card-actions button {
+  width: 30px;
+  height: 30px;
+}
+
+.asset4188-row-actions button {
+  width: 32px;
+  height: 32px;
+}
+
 .asset4188-list {
   border-top: 1px solid var(--lili-4188-border);
 }
 
+.asset4188-list-head {
+  display: grid;
+  grid-template-columns: 36px 56px minmax(180px, 1.5fr) minmax(140px, 1fr) 90px 180px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--lili-4188-border);
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.asset4188-list-head .is-end {
+  text-align: right;
+}
+
 .asset4188-row {
   display: grid;
-  grid-template-columns: 36px 56px minmax(180px, 1.5fr) minmax(140px, 1fr) 90px 170px;
+  grid-template-columns: 36px 56px minmax(180px, 1.5fr) minmax(140px, 1fr) 90px 180px;
   align-items: center;
   gap: 10px;
   min-height: 76px;
@@ -261,6 +311,11 @@
   border-radius: 10px;
   color: var(--lili-4188-text-secondary);
   cursor: pointer;
+}
+
+.asset4188-list.has-menu .asset4188-row,
+.asset4188-list.has-menu .asset4188-list-head {
+  grid-template-columns: 36px 56px minmax(180px, 1.5fr) minmax(140px, 1fr) 90px 216px;
 }
 
 .asset4188-row:hover {
@@ -272,7 +327,14 @@
   box-shadow: inset 3px 0 0 var(--lili-4188-playback);
 }
 
-.asset4188-row > img,
+.asset4188-art {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+
+.asset4188-cover-art,
 .asset4188-cover {
   width: 56px;
   height: 56px;
@@ -281,10 +343,58 @@
   object-fit: cover;
 }
 
+.asset4188-eq {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  display: flex;
+  height: 14px;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  background: var(--lili-4188-image-chip);
+  color: var(--lili-4188-playback);
+}
+
+.asset4188-eq i {
+  display: block;
+  width: 2px;
+  border-radius: 1px;
+  background: currentcolor;
+  animation: asset4188-eq-bounce 900ms ease-in-out infinite;
+}
+
+.asset4188-eq i:nth-child(1) {
+  height: 4px;
+}
+
+.asset4188-eq i:nth-child(2) {
+  height: 8px;
+  animation-delay: 120ms;
+}
+
+.asset4188-eq i:nth-child(3) {
+  height: 6px;
+  animation-delay: 240ms;
+}
+
+.asset4188-eq.is-paused i {
+  animation-play-state: paused;
+  opacity: 0.7;
+}
+
 .asset4188-index {
   color: var(--lili-4188-text-muted);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+.asset4188-index.is-top {
+  color: var(--lili-4188-action);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .asset4188-copy {
@@ -309,6 +419,11 @@
 .asset4188-middle,
 .asset4188-end {
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.asset4188-list.has-header .asset4188-middle {
+  text-align: right;
 }
 
 .asset4188-end {
@@ -326,25 +441,51 @@
 }
 
 .asset4188-row:hover .asset4188-row-actions,
-.asset4188-row:focus-within .asset4188-row-actions {
+.asset4188-row:focus-within .asset4188-row-actions,
+.asset4188-row.is-current .asset4188-row-actions {
   opacity: 1;
   pointer-events: auto;
 }
 
-.asset4188-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 24px;
-  flex-wrap: wrap;
+.asset4188-more {
+  display: grid;
+}
+
+.asset4188-row-actions button:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+@keyframes asset4188-eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.55);
+  }
+
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asset4188-eq i {
+    animation: none;
+  }
 }
 
 @media (width<=980px) {
-  .asset4188-row {
-    grid-template-columns: 30px 52px minmax(150px, 1fr) 80px 130px;
+  .asset4188-row,
+  .asset4188-list-head {
+    grid-template-columns: 30px 52px minmax(150px, 1fr) 80px 176px;
   }
 
-  .asset4188-middle {
+  .asset4188-list.has-menu .asset4188-row,
+  .asset4188-list.has-menu .asset4188-list-head {
+    grid-template-columns: 30px 52px minmax(150px, 1fr) 80px 196px;
+  }
+
+  .asset4188-middle,
+  .asset4188-list-head > :nth-child(4) {
     display: none;
   }
 }
@@ -355,8 +496,10 @@
     flex-direction: column;
   }
 
-  .asset4188-stats {
-    grid-template-columns: 1fr 1fr;
+  .asset4188-page-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .asset4188-grid {
@@ -365,17 +508,36 @@
   }
 
   .asset4188-row {
-    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
     padding-inline: 4px;
+  }
+
+  .asset4188-list.has-menu .asset4188-row {
+    grid-template-columns: 48px minmax(0, 1fr) auto 48px;
+  }
+
+  .asset4188-list-head {
+    display: none;
   }
 
   .asset4188-index,
   .asset4188-middle,
-  .asset4188-row-actions {
+  .asset4188-row-actions:not(.is-menu) {
     display: none;
   }
 
-  .asset4188-row > img,
+  .asset4188-row-actions.is-menu {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .asset4188-row-actions.is-menu > button:not(.asset4188-more) {
+    display: none;
+  }
+
+  .asset4188-art,
+  .asset4188-cover-art,
   .asset4188-cover {
     width: 48px;
     height: 48px;
