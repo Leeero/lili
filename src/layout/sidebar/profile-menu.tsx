@@ -109,6 +109,7 @@ const ProfileMenu = () => {
           if (mid) {
             await useFavoritesStore.getState().updateCreatedFavorites(mid);
             await useFavoritesStore.getState().updateCollectedFavorites(mid);
+            await useFavoritesStore.getState().updateSeasonSeries(mid);
           }
           addToast({
             title: "数据刷新成功",

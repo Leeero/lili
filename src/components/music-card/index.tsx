@@ -19,10 +19,24 @@ export interface MusicCardProps {
   menus: ContextMenuItem[];
   onMenuAction: (key: string) => void;
   onPress?: () => void;
+  /** 失效条目：灰显、无播放悬停层。 */
+  invalid?: boolean;
 }
 
 const MusicCard = memo(
-  ({ title, cover, playCount, duration, ownerName, ownerMid, time, menus, onMenuAction, onPress }: MusicCardProps) => {
+  ({
+    title,
+    cover,
+    playCount,
+    duration,
+    ownerName,
+    ownerMid,
+    time,
+    menus,
+    onMenuAction,
+    onPress,
+    invalid = false,
+  }: MusicCardProps) => {
     const durationText = useMemo(() => {
       if (typeof duration === "number") return formatDuration(duration);
       if (typeof duration === "string") return duration;
@@ -30,7 +44,10 @@ const MusicCard = memo(
     }, [duration]);
 
     return (
-      <div onClick={onPress} className="rounded-medium flex h-full w-full cursor-pointer flex-col">
+      <div
+        onClick={invalid ? undefined : onPress}
+        className={`rounded-medium flex h-full w-full flex-col ${invalid ? "cursor-default opacity-45" : "cursor-pointer"}`}
+      >
         <ContextMenu items={menus} onAction={onMenuAction} className="grow">
           <div className="group flex h-full grow flex-col">
             <div className="rounded-medium relative overflow-hidden">
@@ -46,7 +63,7 @@ const MusicCard = memo(
                   {durationText && <span className="tabular-nums">{durationText}</span>}
                 </div>
               ) : null}
-              {typeof onPress === "function" && (
+              {!invalid && typeof onPress === "function" && (
                 <div className="pointer-events-none absolute right-2 bottom-8 z-40 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
                   <div className="bg-primary rounded-full shadow-2xl">
                     <div className="flex h-10 w-10 items-center justify-center">
@@ -56,7 +73,10 @@ const MusicCard = memo(
                 </div>
               )}
             </div>
-            <div className="mt-2 line-clamp-2 w-full overflow-hidden wrap-break-word text-ellipsis">{title}</div>
+            <div className="mt-2 line-clamp-2 w-full overflow-hidden wrap-break-word text-ellipsis">
+              {title}
+              {invalid && <span className="text-foreground-400 ml-1 text-xs">[已失效]</span>}
+            </div>
           </div>
         </ContextMenu>
         {ownerName && (

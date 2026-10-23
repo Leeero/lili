@@ -115,6 +115,7 @@ const FavoritesEditModal = ({ mid, isOpen, onOpenChange, onSuccess }: Props) => 
             cover: res.data.cover,
             type: res.data.type,
             mid: res.data.mid,
+            source: "favorite-folder",
           });
           reset();
           onOpenChange(false);
@@ -144,6 +145,7 @@ const FavoritesEditModal = ({ mid, isOpen, onOpenChange, onSuccess }: Props) => 
             cover: res.data.cover,
             type: res.data.type,
             mid: res.data.mid,
+            source: "favorite-folder",
           });
           addToast({ color: "success", title: "创建成功" });
           reset();

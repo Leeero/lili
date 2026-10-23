@@ -147,4 +147,29 @@ describe("track adapters", () => {
       canDownloadVideo: false,
     });
   });
+
+  test("invalid and collection entries are not playable but keep source link", () => {
+    const base = adaptNewMusicToTrack(
+      { bvid: "BV100", aid: "100", music_title: "Song", cover: "cover.jpg" },
+      "fallback",
+    );
+    const caps = { isLoggedIn: true };
+    // 失效条目：一切播放/入队/下载/收藏关闭，仅可溯源。
+    expect(getTrackCapabilities({ ...base, invalid: true }, caps)).toMatchObject({
+      canPlay: false,
+      canPlayNext: false,
+      canAddToQueue: false,
+      canFavorite: false,
+      canDownloadAudio: false,
+      canDownloadVideo: false,
+      canOpenSource: true,
+    });
+    // 合集条目：同上（不是单曲）。
+    expect(getTrackCapabilities({ ...base, collectionHref: "/collection/1?type=21" }, caps)).toMatchObject({
+      canPlay: false,
+      canAddToQueue: false,
+      canDownloadAudio: false,
+      canOpenSource: true,
+    });
+  });
 });
