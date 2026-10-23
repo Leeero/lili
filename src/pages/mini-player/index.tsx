@@ -117,7 +117,7 @@ const CompactMiniPlayer = () => {
             )}
           </div>
           <div className="mini4188-progress window-no-drag flex items-center gap-2">
-            <span className="w-7 text-right text-[10px] text-[rgb(var(--lili-color-text-tertiary))] tabular-nums">
+            <span className="min-w-7 flex-shrink-0 text-right text-[10px] whitespace-nowrap text-[rgb(var(--lili-color-text-tertiary))] tabular-nums">
               {title ? formatDuration(currentTime) : "-:--"}
             </span>
             <Slider
@@ -130,7 +130,7 @@ const CompactMiniPlayer = () => {
               }}
               isDisabled={!title}
               size="sm"
-              className="flex-1"
+              className="min-w-0 flex-1"
               classNames={{
                 trackWrapper: "group",
                 track: "h-[3px] cursor-pointer",
@@ -139,7 +139,7 @@ const CompactMiniPlayer = () => {
                 }),
               }}
             />
-            <span className="w-7 text-[10px] text-[rgb(var(--lili-color-text-tertiary))] tabular-nums">
+            <span className="min-w-7 flex-shrink-0 text-[10px] whitespace-nowrap text-[rgb(var(--lili-color-text-tertiary))] tabular-nums">
               {title ? formatDuration(duration) : "-:--"}
             </span>
           </div>

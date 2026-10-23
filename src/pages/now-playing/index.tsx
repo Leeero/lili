@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router";
 
 import {
   RiArrowLeftLine,
+  RiCloseLine,
   RiListCheck2,
   RiOrderPlayLine,
   RiPauseLargeFill,
@@ -49,6 +50,8 @@ const NowPlayingPage = () => {
   const isFixture = params.get("fixture") === NOW_PLAYING_PAGE_FIXTURE_NAME;
   const [mainView, setMainView] = useState<MainView>("cover");
   const [sideView, setSideView] = useState<SideView>("lyrics");
+  // 视频态下右侧面板收成抽屉，由右上角浮层开关唤出；封面态下该值不生效。
+  const [videoSideOpen, setVideoSideOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const lyricsRef = useRef<HTMLDivElement>(null);
   // 用户手动滚动后暂停自动跟随 5 秒，避免跟用户抢滚动条。
@@ -160,7 +163,7 @@ const NowPlayingPage = () => {
           返回应用
         </button>
       </header>
-      <main className="np4188-main">
+      <main className={["np4188-main", showVideo ? "is-video" : ""].filter(Boolean).join(" ")}>
         <section className="np4188-art-column">
           <div className="np4188-stage">
             {!showVideo && (
@@ -201,7 +204,10 @@ const NowPlayingPage = () => {
               <button
                 type="button"
                 className="np4188-view-toggle"
-                onClick={() => setMainView(v => (v === "cover" ? "video" : "cover"))}
+                onClick={() => {
+                  setMainView(v => (v === "cover" ? "video" : "cover"));
+                  setVideoSideOpen(false);
+                }}
               >
                 {mainView === "cover" ? "视频" : "封面"}
               </button>
@@ -231,7 +237,35 @@ const NowPlayingPage = () => {
             </div>
           </div>
         </section>
-        <aside className="np4188-side">
+        {showVideo && !videoSideOpen && (
+          <button
+            type="button"
+            className="np4188-side-toggle"
+            onClick={() => setVideoSideOpen(true)}
+            aria-label="打开歌词与队列面板"
+            title="歌词 / 分P / 播放队列"
+          >
+            <RiListCheck2 />
+          </button>
+        )}
+        {showVideo && videoSideOpen && (
+          <div className="np4188-side-backdrop" onClick={() => setVideoSideOpen(false)} aria-hidden="true" />
+        )}
+        <aside
+          className={["np4188-side", showVideo ? "is-drawer" : "", showVideo && videoSideOpen ? "is-open" : ""]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          {showVideo && (
+            <button
+              type="button"
+              className="np4188-side-close"
+              onClick={() => setVideoSideOpen(false)}
+              aria-label="收起面板"
+            >
+              <RiCloseLine />
+            </button>
+          )}
           <div className="np4188-tabs">
             <button
               type="button"

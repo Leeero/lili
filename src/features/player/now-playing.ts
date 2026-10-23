@@ -72,6 +72,8 @@ export interface NowPlaying {
   ownerMid?: number;
   /** 多集视频 —— 决定播放栏左段是否出现分集列表入口。 */
   hasMultiPart: boolean;
+  /** 视频稿件（type mv）—— 决定播放栏左段是否出现「点赞」入口（音频区无点赞）。 */
+  isVideo: boolean;
   /** 本地曲目 —— 收藏 / 更多菜单 / 副行跳转在本地曲目上都不适用。 */
   sourceIsLocal: boolean;
   cover?: string;
@@ -105,6 +107,7 @@ export const useNowPlaying = (): NowPlaying => {
       ownerClickable: false,
       ownerMid: undefined,
       hasMultiPart: false,
+      isVideo: false,
       sourceIsLocal: fixture.source === "local",
       // 封面:**不给地址**, 由 Artwork 回落到 playbarCover 占位 —— 见 placeholder-art.ts。
       cover: undefined,
@@ -127,6 +130,7 @@ export const useNowPlaying = (): NowPlaying => {
     ownerClickable: playItem?.source !== "local" && Boolean(playItem?.ownerMid),
     ownerMid: playItem?.ownerMid,
     hasMultiPart: Boolean(playItem?.hasMultiPart),
+    isVideo: playItem?.type === "mv",
     sourceIsLocal: playItem?.source === "local",
     cover: playItem?.pageCover || playItem?.cover,
     controlsDisabled: isEmpty,

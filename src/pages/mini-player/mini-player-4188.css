@@ -25,7 +25,14 @@
   min-height: 44px;
 }
 
-.mini4188-control,
+/* 360px 小窗内容区仅 228px：5 枚控件 44px + 4 个 4px 间隙 = 236px，会向右溢出 8px，
+   把最右「展开」按钮顶到窗口圆角边缘、吃掉 pr-2 右边距。mini 控件降到 40px（5×40+16=216 ≤ 228），
+   系统集成页（宽窗口）维持 44px 不变。 */
+.mini4188-control {
+  min-width: 40px !important;
+  min-height: 44px !important;
+}
+
 .system4188-icon-button,
 .system4188-expand {
   min-width: 44px !important;

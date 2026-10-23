@@ -2,7 +2,7 @@
 .lili-theme-4188 {
   --lili-4188-font-sans: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui,
     sans-serif;
-  --lili-4188-font-numeric: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --lili-4188-font-numeric: ui-monospace, "SF Mono", menlo, consolas, "Liberation Mono", monospace;
   --lili-4188-type-page-size: 38px;
   --lili-4188-type-page-weight: 700;
   --lili-4188-type-page-leading: 1.12;
@@ -21,6 +21,9 @@
   --lili-4188-topbar-mobile-height: 68px;
   --lili-4188-player-height: 84px;
   --lili-4188-player-mobile-height: 124px;
+
+  /* 播放栏块顶边的进度线厚度：空进度时它就是块的 1px 上边框的加强版。 */
+  --lili-4188-player-progress-h: 3px;
   --lili-4188-mobile-nav-height: 52px;
   --lili-4188-queue-width: 388px;
   --lili-4188-queue-overlay-width: 380px;

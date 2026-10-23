@@ -334,23 +334,42 @@
   max-width: none;
 }
 
+/* 块顶边进度条 + 内层网格纵向排布；迷你歌词浮层以整个播放栏为定位上下文。 */
 .shell4188-player {
   grid-row: 3;
   grid-column: 1 / -1;
   z-index: var(--lili-4188-z-player);
   min-width: 0;
-  border-top: 1px solid var(--lili-4188-border);
   background: var(--lili-4188-surface-player);
   backdrop-filter: blur(24px);
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
+/*
+ * 进度线即播放栏的上边框：绝对定位贴住块顶边、左右出血，不再占块内一行。
+ * 空进度时轨道用描边色，看起来仍是块的上边框；进度色由组件画在轨道内部。
+ */
+.shell4188-player-progress {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+}
+
+.shell4188-player-progress:has(input:focus-visible) {
+  box-shadow: inset 0 0 0 2px var(--lili-4188-focus);
+}
+
+/* 内层给块底留出呼吸：12 / 14 的内距让 56px 封面上下各有 13–15px，不再贴底。 */
 .shell4188-player-inner {
   display: grid;
   grid-template-columns: minmax(310px, 1fr) minmax(420px, 1.2fr) minmax(310px, 1fr);
   align-items: center;
   width: 100%;
-  height: 100%;
-  padding: 12px 24px;
+  flex: 1;
+  min-height: 0;
+  padding: 12px 24px 14px;
   gap: 20px;
 }
 
@@ -381,6 +400,83 @@
 .shell4188-queue-button[aria-pressed="true"] {
   color: var(--lili-4188-playback);
   background: var(--lili-4188-playback-soft);
+}
+
+/* 「词」药丸按钮：与队列药丸同族，激活态用播放色。 */
+.shell4188-lyrics-button {
+  height: 30px;
+  padding-inline: 14px;
+  border: 0;
+  border-radius: var(--lili-4188-radius-pill);
+  color: var(--lili-4188-text-secondary);
+  background: var(--lili-4188-surface-elevated);
+  cursor: pointer;
+}
+
+.shell4188-lyrics-button.is-active {
+  color: var(--lili-4188-playback);
+  background: var(--lili-4188-playback-soft);
+}
+
+/* 迷你歌词浮层：播放栏上方居中，展示当前句及前后各一句。 */
+.shell4188-lyrics-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  z-index: var(--lili-4188-z-player);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 280px;
+  max-width: 480px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: var(--lili-4188-surface-elevated);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 40%);
+}
+
+.shell4188-lyrics-line {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--lili-4188-text-muted);
+}
+
+.shell4188-lyrics-line.is-active {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--lili-4188-text-primary);
+}
+
+/* 标题跑马灯：单行超出时无缝滚动（双副本 + translateX(-50%)），短标题不滚。 */
+.shell4188-title-marquee {
+  overflow: hidden;
+}
+
+.shell4188-title-marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.shell4188-title-marquee-track > span {
+  padding-right: 3em;
+}
+
+.shell4188-title-marquee[data-overflow="true"] .shell4188-title-marquee-track {
+  animation: shell4188-title-marquee 12s linear infinite;
+}
+
+@keyframes shell4188-title-marquee {
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .shell4188-queue {

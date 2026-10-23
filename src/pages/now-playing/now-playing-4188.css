@@ -136,6 +136,92 @@
   object-fit: cover;
 }
 
+/* 视频态：右侧歌词/分P/队列面板收成抽屉（右上角浮层开关唤出），视频铺满窗口 ——
+   去掉封面态两栏的 1420px 内容上限，否则宽屏下左右留大黑边。 */
+.np4188-main.is-video {
+  grid-template-columns: 1fr;
+  position: relative;
+  max-width: none;
+}
+
+/* 视频尽量大：宽度取视口，高度反推 16:9 上限，两者取小避免纵向溢出。 */
+.np4188-main.is-video .np4188-art.is-video {
+  width: min(90vw, calc((100vh - 240px) * 16 / 9));
+  border-radius: 14px;
+}
+
+/* 浮层开关：视频态且抽屉收起时，右上角一枚圆形按钮。 */
+.np4188-side-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: 50%;
+  background: var(--lili-4188-surface-elevated);
+  color: var(--lili-4188-text-primary);
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 30%);
+}
+
+.np4188-side-toggle:hover {
+  background: var(--lili-4188-surface-hover);
+}
+
+/* 抽屉遮罩：抽屉展开时盖住视频，点击收起。 */
+.np4188-side-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgb(0 0 0 / 35%);
+}
+
+/* 视频态的侧栏抽屉：右侧滑出。 */
+.np4188-side.is-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  width: min(440px, 44vw);
+  justify-content: flex-start;
+  padding: 24px 20px;
+  border-left: 1px solid var(--lili-4188-border);
+  background: var(--lili-4188-canvas);
+  box-shadow: -24px 0 60px rgb(0 0 0 / 40%);
+  transform: translateX(108%);
+  transition: transform 240ms ease;
+  overflow-y: auto;
+}
+
+.np4188-side.is-drawer.is-open {
+  transform: translateX(0);
+}
+
+/* 抽屉内的收起按钮。 */
+.np4188-side-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-secondary);
+  cursor: pointer;
+}
+
+.np4188-side-close:hover {
+  color: var(--lili-4188-text-primary);
+}
+
 /* 中心封面：占盘面 74%，压住盘心刻痕，边缘一圈细描边 + 投影让封面从盘面浮起。 */
 .np4188-cover {
   position: absolute;
