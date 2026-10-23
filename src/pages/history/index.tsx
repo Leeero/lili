@@ -21,6 +21,10 @@ import { PageState } from "@/ui/states/page-state";
 
 import HistorySearch from "./search";
 
+import "./history-4188.css";
+
+const SKELETON_ROWS = 6;
+
 /** 历史项 → 可播放项：带上 history.cid，从对应分 P 起播（续播）。 */
 const toHistoryPlayItem = (item: HistoryListItem) => ({
   type: "mv" as const,
@@ -32,6 +36,24 @@ const toHistoryPlayItem = (item: HistoryListItem) => ({
   ownerMid: item.author_mid,
 });
 
+const HistorySkeleton = () => (
+  <div className="history4188-skeleton" role="status" aria-label="正在加载观看历史">
+    {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+      <div key={index} className="history4188-skeleton-row">
+        <span className="history4188-skeleton-index" />
+        <span className="history4188-skeleton-cover" />
+        <span className="history4188-skeleton-copy">
+          <i />
+          <i />
+        </span>
+        <span className="history4188-skeleton-middle" />
+        <span className="history4188-skeleton-end" />
+        <span />
+      </div>
+    ))}
+  </div>
+);
+
 const History = () => {
   const scrollerRef = useRef<ScrollRefObject>(null);
 
@@ -40,17 +62,22 @@ const History = () => {
   const [list, setList] = useState<HistoryListItem[]>([]);
   // 首页加载失败时的错误信息；为空表示无错误（避免用空态伪装请求失败）
   const [loadError, setLoadError] = useState<null | string>(null);
+  const [loadMoreError, setLoadMoreError] = useState<null | string>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [filtersActive, setFiltersActive] = useState(false);
+  const [filterVersion, setFilterVersion] = useState(0);
   const pageRef = useRef(1);
   const keywordRef = useRef("");
   const dateRangeRef = useRef<{ start?: number; end?: number } | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const loadingMoreRef = useRef(false);
   const user = useUser(state => state.user);
 
-  // 当前播放稿件的 bvid，用于列表行「播放中」标记。
+  // 当前播放稿件：用于行内播放/暂停切换与青色标记。
   const currentBvid = usePlayList(state => state.list.find(item => item.id === state.playId)?.bvid);
+  const isPlaying = usePlayList(state => state.isPlaying);
 
-  // 加载历史记录（只负责请求和数据合并，loading 状态由调用方管理）
-  const fetchHistory = useCallback(async () => {
+  // 加载历史记录；返回 false 表示失败，供加载更多回退页码。
+  const fetchHistory = useCallback(async (): Promise<boolean> => {
     try {
       const params: WebInterfaceHistorySearchParams = {
         pn: pageRef.current,
@@ -70,41 +97,34 @@ const History = () => {
       const res = await searchWebInterfaceHistory(params);
 
       if (res.code !== 0) {
-        if (res.code === -101) {
-          throw new Error("请先登录");
-        }
+        if (res.code === -101) throw new Error("请先登录");
         throw new Error(res.message || "获取历史记录失败");
       }
 
       const newList = res.data?.list || [];
-      // 请求成功：清除错误态，统一走追加逻辑（首次加载 / 刷新前会清空 list）
       setLoadError(null);
-      if (pageRef.current === 1) {
-        setList(newList);
-      } else {
-        setList(prev => [...prev, ...newList]);
-      }
-
+      setLoadMoreError(null);
+      if (pageRef.current === 1) setList(newList);
+      else setList(prev => [...prev, ...newList]);
       setHasMore(res.data.has_more);
-    } catch (error: any) {
-      const message = error?.message || "获取历史记录失败";
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "获取历史记录失败";
       if (pageRef.current === 1) {
-        // 首页失败：进入错误态并提供重试，不用"暂无记录"的空态掩盖失败
         setList([]);
+        setHasMore(false);
         setLoadError(message);
       } else {
-        // 加载更多失败：保留已有列表，仅提示
-        addToast({
-          title: message,
-          color: "danger",
-        });
+        setLoadMoreError(message);
       }
+      return false;
     }
   }, []);
 
   const refreshList = useCallback(async () => {
     pageRef.current = 1;
     setLoadError(null);
+    setLoadMoreError(null);
     setLoading(true);
     try {
       await fetchHistory();
@@ -113,24 +133,40 @@ const History = () => {
     }
   }, [fetchHistory]);
 
-  const handleLoadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+  const loadNextPage = useCallback(async () => {
+    if (loading || loadingMoreRef.current || !hasMore || loadMoreError) return;
 
+    loadingMoreRef.current = true;
     setLoadingMore(true);
+    pageRef.current += 1;
     try {
-      pageRef.current += 1;
-      await fetchHistory();
-    } catch {
-      pageRef.current -= 1;
+      const ok = await fetchHistory();
+      if (!ok) pageRef.current -= 1;
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, fetchHistory]);
+  }, [loading, hasMore, loadMoreError, fetchHistory]);
+
+  const retryLoadMore = () => {
+    if (loading || loadingMoreRef.current) return;
+    setLoadMoreError(null);
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    pageRef.current += 1;
+    void fetchHistory().then(ok => {
+      if (!ok) pageRef.current -= 1;
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    });
+  };
 
   const handleSearch = useCallback(
     async (keyword: string) => {
       keywordRef.current = keyword;
       pageRef.current = 1;
+      setFiltersActive(Boolean(keyword) || Boolean(dateRangeRef.current));
+      setFilterVersion(version => version + 1);
       setLoading(true);
       try {
         await fetchHistory();
@@ -145,6 +181,8 @@ const History = () => {
     async (range: { start?: number; end?: number } | null) => {
       dateRangeRef.current = range;
       pageRef.current = 1;
+      setFiltersActive(Boolean(range) || Boolean(keywordRef.current));
+      setFilterVersion(version => version + 1);
       setLoading(true);
       try {
         await fetchHistory();
@@ -161,52 +199,58 @@ const History = () => {
     void refreshList();
   }, [refreshList, user?.isLogin]);
 
-  const handleMenuAction = useCallback(async (key: string, item: HistoryListItem) => {
-    switch (key) {
-      case "play":
-        await usePlayList.getState().play(toHistoryPlayItem(item));
-        break;
-      case "play-next":
-        usePlayList.getState().addToNext(toHistoryPlayItem(item));
-        break;
-      case "add-to-playlist":
-        usePlayList.getState().addList([toHistoryPlayItem(item)]);
-        break;
-      case "download-audio":
-        await window.electron.addMediaDownloadTask({
-          outputFileType: "audio",
-          title: item.title,
-          cover: item.cover,
-          bvid: item.history.bvid,
-          cid: item.history.cid,
-        });
-        addToast({
-          title: "已添加下载任务",
-          color: "success",
-        });
-        break;
-      case "delete":
-        useModalStore.getState().onOpenConfirmModal({
-          title: `删除记录「${item.title}」`,
-          confirmText: "删除",
-          onConfirm: async () => {
-            const res = await postHistoryDelete({
-              kid: `${item.history.business}_${item.kid}`,
-            });
-
-            if (res.code === 0) {
-              setList(prev => prev.filter(record => record.kid !== item.kid));
-              addToast({
-                title: "已删除记录",
-                color: "success",
+  const handleMenuAction = useCallback(
+    async (key: string, item: HistoryListItem) => {
+      switch (key) {
+        case "play": {
+          const same = Boolean(currentBvid && item.history.bvid && item.history.bvid === currentBvid);
+          if (same) usePlayList.getState().togglePlay();
+          else await usePlayList.getState().play(toHistoryPlayItem(item));
+          break;
+        }
+        case "play-next":
+          usePlayList.getState().addToNext(toHistoryPlayItem(item));
+          break;
+        case "add-to-playlist":
+          usePlayList.getState().addList([toHistoryPlayItem(item)]);
+          break;
+        case "download-audio":
+          await window.electron.addMediaDownloadTask({
+            outputFileType: "audio",
+            title: item.title,
+            cover: item.cover,
+            bvid: item.history.bvid,
+            cid: item.history.cid,
+          });
+          addToast({
+            title: "已添加下载任务",
+            color: "success",
+          });
+          break;
+        case "delete":
+          useModalStore.getState().onOpenConfirmModal({
+            title: `删除记录「${item.title}」`,
+            confirmText: "删除",
+            onConfirm: async () => {
+              const res = await postHistoryDelete({
+                kid: `${item.history.business}_${item.kid}`,
               });
-            }
-            return res.code === 0;
-          },
-        });
-        break;
-    }
-  }, []);
+
+              if (res.code === 0) {
+                setList(prev => prev.filter(record => record.kid !== item.kid));
+                addToast({
+                  title: "已删除记录",
+                  color: "success",
+                });
+              }
+              return res.code === 0;
+            },
+          });
+          break;
+      }
+    },
+    [currentBvid],
+  );
 
   const handleClear = useCallback(() => {
     useModalStore.getState().onOpenConfirmModal({
@@ -223,25 +267,31 @@ const History = () => {
   }, [refreshList]);
 
   const isEmpty = !loading && list.length === 0;
+  const countLabel = hasMore ? `已载入 ${list.length} 条` : `共 ${list.length} 条`;
 
   return (
-    <ScrollContainer enableBackToTop ref={scrollerRef} className="h-full w-full">
+    <ScrollContainer
+      enableBackToTop
+      ref={scrollerRef}
+      className="h-full w-full"
+      resetOnChange={filterVersion}
+      onReachEnd={loadNextPage}
+    >
       <div className="asset4188-page">
-        <header className="asset4188-head">
-          <div>
-            <span className="asset4188-eyebrow">来自 Bilibili</span>
-            <h1>观看历史</h1>
-            <p>这里显示 Bilibili 历史，不等同于 lili 的听歌统计。</p>
-          </div>
-          <div className="asset4188-actions">
-            <button type="button" className="is-danger" disabled={!user?.isLogin} onClick={handleClear}>
-              清空历史
-            </button>
-          </div>
-        </header>
-        <div className="asset4188-filter">
-          <HistorySearch onSearch={handleSearch} onDateRangeChange={handleDateRangeChange} />
-        </div>
+        <h1 className="sr-only">观看历史</h1>
+
+        {user?.isLogin && (
+          <HistorySearch
+            onSearch={keyword => void handleSearch(keyword)}
+            onDateRangeChange={range => void handleDateRangeChange(range)}
+            actions={
+              <button type="button" className="history4188-clear" disabled={!user.isLogin} onClick={handleClear}>
+                清空历史
+              </button>
+            }
+          />
+        )}
+
         {!user?.isLogin ? (
           <PageState
             kind="empty"
@@ -251,29 +301,57 @@ const History = () => {
             onAction={openLoginModal}
           />
         ) : loading && list.length === 0 ? (
-          <PageState kind="loading" />
+          <HistorySkeleton />
         ) : loadError && list.length === 0 ? (
           <PageState kind="error" description={loadError} actionLabel="重新加载" onAction={() => void refreshList()} />
         ) : isEmpty ? (
-          <PageState kind="empty" title="暂无历史记录" />
+          <PageState
+            kind="empty"
+            title={filtersActive ? "当前筛选下没有记录" : "暂无历史记录"}
+            description={filtersActive ? "换个时间范围或关键词试试" : "在 B 站观看过的内容会同步到这里"}
+          />
         ) : (
-          <section className="asset4188-section">
+          <section className="asset4188-section history4188-section" aria-busy={loading}>
             <div className="asset4188-section-head">
-              <h2>观看记录 · {list.length} 条</h2>
+              <h2>观看记录 · {countLabel}</h2>
+              {loading && <span className="history4188-updating">更新中…</span>}
             </div>
             <AssetTrackList
               label="观看记录"
-              rows={list.map((item, index) => ({
-                id: `${item.history.business}-${item.kid}`,
-                index: index + 1,
-                title: item.title,
-                subtitle: item.author_name,
-                art: item.cover,
-                middle: `${formatDuration(item.progress ?? 0)} / ${formatDuration(item.duration ?? 0)}`,
-                end: formatSecondsToDate(item.view_at),
-                current: Boolean(currentBvid && item.history.bvid && currentBvid === item.history.bvid),
-                source: item,
-              }))}
+              showHeader
+              keepRank
+              headerLabels={{ index: "#", title: "标题", middle: "进度", end: "观看时间" }}
+              rows={list.map((item, index) => {
+                const progress = item.progress ?? 0;
+                const duration = item.duration ?? 0;
+                const percent = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
+                const progressText = duration > 0 ? `${formatDuration(progress)} / ${formatDuration(duration)}` : "—";
+
+                return {
+                  id: `${item.history.business}-${item.kid}`,
+                  index: index + 1,
+                  title: item.title,
+                  subtitle: (
+                    <span>
+                      {item.author_name}
+                      <span className="history4188-mobile-progress"> · {progressText}</span>
+                    </span>
+                  ),
+                  art: item.cover,
+                  middle: (
+                    <span className="history4188-progress">
+                      <span className="history4188-progress-track" aria-hidden="true">
+                        <span style={{ width: `${percent}%` }} />
+                      </span>
+                      <span className="history4188-progress-text">{progressText}</span>
+                    </span>
+                  ),
+                  end: formatSecondsToDate(item.view_at),
+                  current: Boolean(currentBvid && item.history.bvid && currentBvid === item.history.bvid),
+                  playing: isPlaying,
+                  source: item,
+                };
+              })}
               actions={[
                 { key: "play-next", label: "下一首", icon: "next" },
                 { key: "add-to-playlist", label: "入队", icon: "queue-add" },
@@ -282,13 +360,25 @@ const History = () => {
               ]}
               onAction={(row, key) => void handleMenuAction(key, row.source)}
             />
-            {hasMore && (
-              <div className="mt-5 flex justify-center">
-                <Button variant="neutral" disabled={loadingMore} onClick={() => void handleLoadMore()}>
+
+            {loadMoreError && (
+              <div className="history4188-more-error" role="alert">
+                <span>加载更多失败</span>
+                <button type="button" onClick={retryLoadMore}>
+                  重试
+                </button>
+              </div>
+            )}
+
+            {hasMore && !loadMoreError && (
+              <div className="history4188-more">
+                <Button variant="neutral" disabled={loadingMore} onClick={() => void loadNextPage()}>
                   {loadingMore ? "加载中…" : "加载更多"}
                 </Button>
               </div>
             )}
+
+            {!hasMore && <p className="history4188-end">已显示全部 {list.length} 条</p>}
           </section>
         )}
       </div>

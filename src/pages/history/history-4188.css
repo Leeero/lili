@@ -1,0 +1,356 @@
+/* stylelint-disable no-descending-specificity -- 交互态规则集中书写，便于统一维护。 */
+
+/* 观看历史：筛选条与列表的页面级样式。 */
+
+.history4188-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.history4188-presets {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.history4188-preset {
+  position: relative;
+  display: inline-flex;
+  height: 36px;
+  flex: none;
+  align-items: center;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.history4188-preset:hover,
+.history4188-preset.is-active {
+  color: var(--lili-4188-text-primary);
+}
+
+.history4188-preset.is-active::after {
+  position: absolute;
+  right: 6px;
+  bottom: 0;
+  left: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--lili-4188-action);
+  content: "";
+}
+
+.history4188-preset:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: -2px;
+}
+
+.history4188-filter-right {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.history4188-search {
+  width: 240px;
+  flex: none;
+}
+
+.history4188-clear {
+  height: 36px;
+  flex: none;
+  padding: 0 14px;
+  border: 1px solid var(--lili-4188-error);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-error);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    opacity var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.history4188-clear:hover:not(:disabled) {
+  background: var(--lili-4188-surface-hover);
+}
+
+.history4188-clear:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.history4188-clear:focus-visible,
+.history4188-reset-range:focus-visible,
+.history4188-more button:focus-visible,
+.history4188-more-error button:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+.history4188-custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  flex-wrap: wrap;
+}
+
+.history4188-custom-label {
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+}
+
+.history4188-date-range {
+  width: 280px;
+  min-width: 0;
+}
+
+.history4188-reset-range {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history4188-reset-range:hover {
+  color: var(--lili-4188-text-primary);
+}
+
+.history4188-section {
+  margin-top: 12px;
+}
+
+.history4188-updating {
+  margin-left: 8px;
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* ---------- 行内进度 ---------- */
+.history4188-progress {
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.history4188-progress-track {
+  width: 72px;
+  height: 4px;
+  flex: none;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--lili-4188-surface-hover);
+}
+
+.history4188-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lili-4188-playback);
+}
+
+.history4188-progress-text {
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.history4188-mobile-progress {
+  display: none;
+}
+
+/* ---------- 加载 / 到底 ---------- */
+.history4188-skeleton {
+  margin-top: 12px;
+  border-top: 1px solid var(--lili-4188-border);
+}
+
+.history4188-skeleton-row {
+  display: grid;
+  grid-template-columns: 36px 56px minmax(180px, 1.5fr) minmax(140px, 1fr) 90px 180px;
+  align-items: center;
+  gap: 10px;
+  min-height: 76px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--lili-4188-border);
+}
+
+.history4188-skeleton-index,
+.history4188-skeleton-middle,
+.history4188-skeleton-end,
+.history4188-skeleton-cover,
+.history4188-skeleton-copy i {
+  border-radius: 6px;
+  background: var(--lili-4188-surface-hover);
+  animation: history4188-pulse 1.4s ease-in-out infinite;
+}
+
+.history4188-skeleton-index,
+.history4188-skeleton-middle,
+.history4188-skeleton-end {
+  height: 10px;
+}
+
+.history4188-skeleton-end {
+  width: 32px;
+  justify-self: end;
+}
+
+.history4188-skeleton-cover {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+}
+
+.history4188-skeleton-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.history4188-skeleton-copy i {
+  display: block;
+  height: 12px;
+}
+
+.history4188-skeleton-copy i:last-child {
+  width: 60%;
+  height: 10px;
+}
+
+.history4188-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.history4188-end {
+  margin: 22px 0 0;
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.history4188-more-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+}
+
+.history4188-more-error button {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history4188-more-error button:hover {
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-primary);
+}
+
+@keyframes history4188-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history4188-skeleton-index,
+  .history4188-skeleton-middle,
+  .history4188-skeleton-end,
+  .history4188-skeleton-cover,
+  .history4188-skeleton-copy i {
+    animation: none;
+  }
+}
+
+@media (width<=980px) {
+  .history4188-skeleton-row {
+    grid-template-columns: 30px 52px minmax(150px, 1fr) 80px 176px;
+  }
+
+  .history4188-skeleton-middle {
+    display: none;
+  }
+
+  .history4188-mobile-progress {
+    display: inline;
+  }
+}
+
+@media (width<=640px) {
+  .history4188-filter {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .history4188-filter-right {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .history4188-search {
+    width: auto;
+    flex: 1;
+  }
+
+  .history4188-custom {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .history4188-date-range {
+    width: 100%;
+  }
+
+  .history4188-skeleton-row {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    padding-inline: 4px;
+  }
+
+  .history4188-skeleton-index,
+  .history4188-skeleton-middle {
+    display: none;
+  }
+
+  .history4188-skeleton-cover {
+    width: 48px;
+    height: 48px;
+  }
+}
