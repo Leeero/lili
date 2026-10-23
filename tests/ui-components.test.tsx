@@ -547,8 +547,8 @@ describe("分段导航消费的是原型登记的那几个令牌", () => {
         <SegmentNav
           activeKey="created"
           segments={[
-            { key: "created", label: "我的歌单", href: "/library?tab=created" },
-            { key: "collected", label: "我收藏的", href: "/library?tab=collected" },
+            { key: "created", label: "我创建的", href: "/library?tab=created" },
+            { key: "followed", label: "我追的", href: "/library?tab=followed" },
           ]}
         />
       </MemoryRouter>,
@@ -561,37 +561,37 @@ describe("分段导航消费的是原型登记的那几个令牌", () => {
     expect(group?.className).toContain("border-b");
 
     const active = container.querySelector('a[aria-current="page"]');
-    expect(active).toHaveTextContent("我的歌单");
+    expect(active).toHaveTextContent("我创建的");
     expect(active?.className).toContain("--lili-accent");
   });
 
   /**
-   * `/collection/:id` 的三段共用同一个 pathname、只靠 `?type=` 区分，所以
-   * `href` 写成 query-only 的相对形式（`?type=21`），由本层与当前地址合并。
+   * query 型分段的 href 沿用当前路径与其余参数：分段用 query-only 的相对
+   * `href`（如 `?tab=followed`）时，由本层与当前地址合并。
    *
    * 这条测的是**合并**，不是拼字符串：不合并的话，夹具模式（`?fixture=…`）
    * 下点一下分段就会掉出夹具，而画面上的差别要到重跑比对才看得出来。
    */
   test("query 型分段的 href 沿用当前路径与其余参数", async () => {
     const container = await render(
-      <MemoryRouter initialEntries={["/collection/1?fixture=02-playlist-detail"]}>
+      <MemoryRouter initialEntries={["/library?fixture=01-library"]}>
         <SegmentNav
-          activeKey="11"
+          activeKey="created"
           segments={[
-            { key: "11", label: "收藏夹 · 11", href: "?type=11" },
-            { key: "21", label: "合集 · 21", href: "?type=21" },
+            { key: "created", label: "我创建的", href: "?tab=created" },
+            { key: "followed", label: "我追的", href: "?tab=followed" },
           ]}
         />
       </MemoryRouter>,
     );
 
     const active = container.querySelector('a[aria-current="page"]');
-    expect(active).toHaveTextContent("收藏夹 · 11");
-    // 路径、夹具参数、分段给的 type —— 三者都要在。
-    expect(active?.getAttribute("href")).toBe("/collection/1?fixture=02-playlist-detail&type=11");
+    expect(active).toHaveTextContent("我创建的");
+    // 路径、夹具参数、分段给的 tab —— 三者都要在。
+    expect(active?.getAttribute("href")).toBe("/library?fixture=01-library&tab=created");
 
-    const other = Array.from(container.querySelectorAll("a")).find(node => node.textContent === "合集 · 21");
-    expect(other?.getAttribute("href")).toBe("/collection/1?fixture=02-playlist-detail&type=21");
+    const other = Array.from(container.querySelectorAll("a")).find(node => node.textContent === "我追的");
+    expect(other?.getAttribute("href")).toBe("/library?fixture=01-library&tab=followed");
   });
 });
 

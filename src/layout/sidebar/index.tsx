@@ -13,7 +13,7 @@ import {
 } from "@remixicon/react";
 import clx from "classnames";
 
-import { PRIMARY_NAV_ITEMS } from "@/layout/route-shell";
+import { PRIMARY_NAV_ITEMS, resolvePrimaryNavHref } from "@/layout/route-shell";
 import { useSettings } from "@/store/settings";
 
 import ProfileMenu from "./profile-menu";
@@ -80,8 +80,12 @@ const SECTIONS: NavSection[] = [
 /** 应用级入口：不随内容分组，固定在侧栏底部账户卡上方。 */
 const SETTINGS: NavItem = { label: "设置", href: "/settings", icon: RiSettings3Line };
 
-const isActive = (pathname: string, href: string) =>
-  href === "/" ? pathname === "/" || pathname === "/search" : pathname === href || pathname.startsWith(`${href}/`);
+const isActive = (pathname: string, href: string) => {
+  if (href === "/") return pathname === "/" || pathname === "/search";
+  if (pathname === href || pathname.startsWith(`${href}/`)) return true;
+  // 二级页（/collection/:id、/user/:id）保持父级一级入口高亮。
+  return resolvePrimaryNavHref(pathname) === href;
+};
 
 const Sidebar = ({ pathname }: SidebarProps) => {
   const navigate = useNavigate();

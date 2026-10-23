@@ -15,7 +15,6 @@ import path from "node:path";
 import { describe, expect, test, vi } from "vitest";
 
 import { resolveShellLayout, type ShellChrome } from "@/app/shell/model";
-import { CollectionType } from "@/common/constants/collection";
 import {
   DEFAULT_SEARCH_PLACEHOLDER,
   DEFERRED_SEGMENTS,
@@ -25,6 +24,7 @@ import {
   TOPBAR_NOTE_BY_ROUTE,
   composeSegmentCount,
   composeLocalMusicSegments,
+  resolvePrimaryNavHref,
   resolveRouteShell,
   resolveSearchPlaceholder,
   resolveTopbarNote,
@@ -172,6 +172,32 @@ describe("路由壳层契约", () => {
     expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 
+  test("二级页映射回父级一级入口（侧栏高亮不丢）", () => {
+    expect(resolvePrimaryNavHref("/collection/123")).toBe("/library");
+    expect(resolvePrimaryNavHref("/collection/123?type=21")).toBe("/library");
+    expect(resolvePrimaryNavHref("/user/456")).toBe("/follow");
+    expect(resolvePrimaryNavHref("/user/456?tab=video")).toBe("/follow");
+  });
+
+  test("一级入口与独立页不是二级页，不映射父级", () => {
+    for (const pathname of [
+      "/",
+      "/chart",
+      "/library",
+      "/local-music",
+      "/download-list",
+      "/queue",
+      "/history",
+      "/follow",
+      "/settings",
+      "/search",
+      "/now-playing",
+      "/mini-player",
+    ]) {
+      expect(resolvePrimaryNavHref(pathname), pathname).toBeUndefined();
+    }
+  });
+
   test("侧栏一级导航派生自真源，且每个入口都有图标", () => {
     // 侧栏曾硬编码一份与真源逐字相同的表（双份事实源，改一处漏一处）。
     // 这条把它钉成「派生」：一旦有人再抄一份，`PRIMARY_NAV_ITEMS.map` 消失、用例即红。
@@ -183,9 +209,11 @@ describe("路由壳层契约", () => {
   });
 
   test("页面筛选只进入页面内二级导航，不影响壳层状态", () => {
+    // 详情页的类型 tab 已移除：/collection/:id 不再声明分段（三类 id 空间不同，
+    // 无法在同 id 上切类型）。页面筛选仍由页面内分段承接，壳层状态不受影响。
     const shell = resolveRouteShell("/collection/123", "?type=21");
-    expect(shell.contextSegments.map(segment => segment.key)).toEqual(["11", "21", "31"]);
-    expect(shell.activeContextKey).toBe("21");
+    expect(shell.contextSegments).toEqual([]);
+    expect(shell.chrome).toBe("default");
   });
 });
 
@@ -209,9 +237,8 @@ describe("顶栏分段与真值对齐", () => {
     for (const [pattern, entry] of Object.entries(ROUTE_SEGMENTS)) {
       // /search 的标签是「前缀 + 运行时计数」模板，字面标签里那个数字不是
       // 壳层能写死的 —— 见 spec-lock topbarSegments.labelSources 与下面的
-      // 专属 describe。/library 旧真值中的「发现音乐」已经提升为一级入口，
-      // 不再作为用户资产页的第三个同级子视图。
-      if (pattern === "/search" || pattern === "/library") continue;
+      // 专属 describe。/library 真值已是归属轴两段（1.4.0），恢复逐字比对。
+      if (pattern === "/search") continue;
       expect(
         entry.segments.map(segment => segment.label),
         `${pattern} 与真值不一致`,
@@ -227,50 +254,43 @@ describe("顶栏分段与真值对齐", () => {
   });
 });
 
-describe("/collection/:id 顶栏分段组", () => {
-  const segmentsOf = () => resolveRouteShell("/collection/123").contextSegments;
-
-  test("三段链到同一路由的三种数据类型", () => {
-    expect(segmentsOf().map(segment => segment.label)).toEqual(["收藏夹 · 11", "合集 · 21", "系列 · 31"]);
-    // query-only 的 href：路径与其余参数由顶栏沿用当前地址（见 segment-nav.tsx）。
-    expect(segmentsOf().map(segment => segment.href)).toEqual(["?type=11", "?type=21", "?type=31"]);
+describe("/collection/:id 详情页", () => {
+  // 类型 tab 整组移除（1.4.0）：数字是 CollectionType 类型码（误导读总数），
+  // 且三类 id 空间不同（mlid / season_id / series_id），无法在同 id 上切类型。
+  test("详情页不再声明类型分段", () => {
+    const shell = resolveRouteShell("/collection/123");
+    expect(shell.contextSegments).toEqual([]);
   });
 
-  test("三段都是可点的：设计稿画的是切换器，不是坏掉的开关", () => {
-    for (const segment of segmentsOf()) {
-      expect(segment.href, `${segment.label} 缺少 href`).toBeTruthy();
+  test("类型码不再泄漏到分段标签", () => {
+    // 回归钉：旧的「收藏夹 · 11 / 合集 · 21 / 系列 · 31」尾巴是类型码，
+    // 被用户读成集合数量。删 tab 后任何路由的分段都不该再出现这些字面量。
+    for (const entry of Object.values(ROUTE_SEGMENTS)) {
+      for (const segment of entry.segments) {
+        expect(segment.label).not.toMatch(/· (11|21|31)$/);
+      }
     }
   });
+});
 
-  /**
-   * 这条把「标签是静态类型码」这个勘定结论钉在枚举上。
-   *
-   * 标签尾的 11 / 21 / 31 曾被读作**集合数量**（理由写作「需真实收藏数据后
-   * 才能在壳层声明」），于是这一屏的分段组被无限期推迟。取证见 spec-lock
-   * `topbarSegments.labelSources` 与 1.3.8：设计稿导语原文「仅数据类型不同」，
-   * 且三个数字与 `CollectionType` 逐一相等。若哪天有人把标签改成真数量，
-   * 这条会红 —— 那时必须同时改 spec-lock 并给出新取证。
-   */
-  test("标签尾的数字与 CollectionType 枚举同源，不是集合数量", () => {
-    expect(segmentsOf().map(segment => segment.key)).toEqual([
-      String(CollectionType.Favorite),
-      String(CollectionType.VideoCollections),
-      String(CollectionType.VideoSeries),
-    ]);
-  });
-
-  test("激活段由 ?type 决定，缺省 11（与页面缺省 CollectionType.Favorite 一致）", () => {
-    expect(resolveRouteShell("/collection/123").activeContextKey).toBe("11");
-    expect(resolveRouteShell("/collection/123", "?type=21").activeContextKey).toBe("21");
-    // 夹具地址不带 type —— 此时仍须激活「收藏夹 · 11」，否则与设计稿不符。
-    expect(resolveRouteShell("/collection/123", "?fixture=02-playlist-detail").activeContextKey).toBe("11");
-  });
-
-  test("音乐库使用资产分段，默认激活我的歌单", () => {
+describe("/library 顶栏分段组", () => {
+  test("按归属轴分两段：我创建的 / 我追的", () => {
     const shell = resolveRouteShell("/library");
-    expect(shell.contextSegments.map(segment => segment.label)).toEqual(["我的歌单", "我收藏的", "合集与系列"]);
+    expect(shell.contextSegments.map(segment => segment.label)).toEqual(["我创建的", "我追的"]);
     expect(shell.activeContextKey).toBe("created");
-    expect(resolveRouteShell("/library", "?tab=collections").activeContextKey).toBe("collections");
+  });
+
+  test("激活段由 ?tab 决定，缺省 created", () => {
+    expect(resolveRouteShell("/library", "?tab=followed").activeContextKey).toBe("followed");
+    expect(resolveRouteShell("/library", "?tab=created").activeContextKey).toBe("created");
+    // 旧链接 ?tab=collected / ?tab=collections 已无对应段，回落缺省。
+    expect(resolveRouteShell("/library", "?tab=collected").activeContextKey).toBe("created");
+  });
+
+  test("两段都是可点的：跳到对应 tab，不是坏掉的开关", () => {
+    for (const segment of resolveRouteShell("/library").contextSegments) {
+      expect(segment.href, `${segment.label} 缺少 href`).toBeTruthy();
+    }
   });
 });
 

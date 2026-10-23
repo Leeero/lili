@@ -1,7 +1,5 @@
 import type { ShellChrome } from "@/app/shell/model";
 
-import { CollectionType } from "@/common/constants/collection";
-
 /**
  * 路由 → 壳层契约。
  *
@@ -74,11 +72,10 @@ export const PRIMARY_NAV_ITEMS: PrimaryNavItem[] = [
   { label: "下载管理", href: "/download-list" },
 ];
 
-/** 用户资产与发现的主入口。接口来源只属于发现页内部的内容切换，不能占用全局导航。 */
+/** 用户资产的主入口。按归属轴分两段：我创建的（自建收藏夹+合集/系列） / 我追的（收藏的）。 */
 const LIBRARY_SEGMENTS: TopbarSegment[] = [
-  { key: "created", label: "我的歌单", href: "/library?tab=created" },
-  { key: "collected", label: "我收藏的", href: "/library?tab=collected" },
-  { key: "collections", label: "合集与系列", href: "/library?tab=collections" },
+  { key: "created", label: "我创建的", href: "/library?tab=created" },
+  { key: "followed", label: "我追的", href: "/library?tab=followed" },
 ];
 
 /**
@@ -108,30 +105,14 @@ export interface RouteSegmentsSpec {
 }
 
 /**
- * 集合类型分段。`key` 与 `href` 都由枚举生成，只有标签是设计稿原文。
- *
- * 标签末尾的数字与枚举值同源（11 / 21 / 31），但**无**把它 `${type}` 拼出来
- * 当标签 —— 标签是设计稿的逐字内容，`tests/app-shell-interactions.test.ts`
- * 会拿它与 spec-lock 的 `topbarSegments.byRoute` 对照。
- */
-const collectionTypeSegment = (type: CollectionType, label: string): TopbarSegment => ({
-  key: String(type),
-  label,
-  href: `?type=${type}`,
-});
-
-/**
  * 已声明的路由分段组。
  *
- * `/collection/:id` 的三段是**同一路由的三种数据类型**（`CollectionType`
- * 11 / 21 / 31），靠 `?type=` 区分、缺省 11。标签末尾的 11 / 21 / 31 **是
- * 类型码，不是集合数量**。这一点曾在 P1 被读作数量（当时登记的理由是
- * 「标签内嵌集合数量，需真实收藏数据后才能在壳层声明」），于是这一屏的
- * 分段组被无限期推迟 —— 因为「真实收藏数量」永远不会成为壳层的输入。
- * 取证见 spec-lock `topbarSegments.labelSources` 与 `meta.revisions` 1.3.8：
- * 设计稿第 3 页导语原文是「收藏夹 / 合集 / 系列 共用一套详情模板，**仅数据
- * 类型不同**」，且三个数字与 `CollectionType` 的三个枚举值逐一相等，激活项
- * 亦与该屏 `collectionType` 同源。结论：这三段是可以立刻写死的静态标签。
+ * `/library` 的两段是**归属轴**（我创建的 / 我追的），由 `?tab=` 切换；
+ * 类型差异（收藏夹 / 合集 / 系列）只在瓦片徽标上体现，不再占分段位。
+ *
+ * `/collection/:id` **不再声明分段** —— 详情页顶部的「收藏夹 · 11 / 合集 · 21 /
+ * 系列 · 31」类型 tab 已移除：数字是类型码（误导读总数），且三类 id 空间不同
+ * （mlid / season_id / series_id），无法在同 id 上切类型。返回靠壳层后退。
  *
  * `/search` 的两段是**结果类型筛选**（两段结果同页共存，分段决定视口落在
  * 哪一段），标签是**模板**：前缀「音乐视频」/「创作者」+ `countKey` 指向的
@@ -149,12 +130,7 @@ const collectionTypeSegment = (type: CollectionType, label: string): TopbarSegme
 export const ROUTE_SEGMENTS: Readonly<Record<string, RouteSegmentsSpec>> = {
   "/library": {
     segments: LIBRARY_SEGMENTS,
-    activeKey: search => {
-      const tab = search.get("tab");
-      if (tab === "collected") return "collected";
-      if (tab === "collections") return "collections";
-      return "created";
-    },
+    activeKey: search => (search.get("tab") === "followed" ? "followed" : "created"),
   },
   "/queue": {
     segments: [
@@ -179,23 +155,6 @@ export const ROUTE_SEGMENTS: Readonly<Record<string, RouteSegmentsSpec>> = {
       { key: "1", label: "E 盘 · Live 录音", href: "?dir=1" },
     ],
     activeKey: search => search.get("dir") ?? "all",
-  },
-  "/collection/:id": {
-    segments: [
-      collectionTypeSegment(CollectionType.Favorite, "收藏夹 · 11"),
-      collectionTypeSegment(CollectionType.VideoCollections, "合集 · 21"),
-      collectionTypeSegment(CollectionType.VideoSeries, "系列 · 31"),
-    ],
-    // `type` 缺省 11：页面在无 `type` 时按 `CollectionType.Favorite` 渲染，
-    // 所以激活判定必须把这个缺省一并算进去 —— 否则夹具地址（不带 `type`）
-    // 会让三段全灭，而设计稿里「收藏夹 · 11」是**激活态**。
-    // 页面对 21/31 之外的值（0 / 脏链接）同样按收藏夹渲染，判定保持一致。
-    activeKey: search => {
-      const raw = Number(search.get("type"));
-      if (raw === CollectionType.VideoCollections) return String(CollectionType.VideoCollections);
-      if (raw === CollectionType.VideoSeries) return String(CollectionType.VideoSeries);
-      return String(CollectionType.Favorite);
-    },
   },
   "/search": {
     segments: [
@@ -282,6 +241,28 @@ const matchesPattern = (pathname: string, pattern: string): boolean => {
   if (patternParts.length !== pathParts.length) return false;
 
   return patternParts.every((segment, index) => segment.startsWith(":") || segment === pathParts[index]);
+};
+
+/**
+ * 二级页 → 一级导航父级的映射。键是路由 pattern（与 `matchesPattern` 同约定）。
+ *
+ * 侧栏（`layout/sidebar`）与移动端导航（`layout/mobile-nav`）据此在二级页上保持
+ * 父级一级入口高亮：
+ * - `/collection/:id`（收藏夹 / 合集 / 系列详情）属于「我的音乐」`/library`；
+ * - `/user/:id`（创作者主页）属于「关注与动态」`/follow`。
+ *
+ * 未登记的路由不是二级页（要么是一级入口本身、要么是沉浸 / bare 独立页），
+ * 回落 `undefined`，侧栏不做任何一级高亮。
+ */
+export const PRIMARY_PARENT_BY_ROUTE: Readonly<Record<string, string>> = {
+  "/collection/:id": "/library",
+  "/user/:id": "/follow",
+};
+
+/** 解析某个路径所属的一级导航父级 href。非二级页返回 `undefined`。 */
+export const resolvePrimaryNavHref = (pathname: string): string | undefined => {
+  const hit = Object.entries(PRIMARY_PARENT_BY_ROUTE).find(([pattern]) => matchesPattern(pathname, pattern));
+  return hit?.[1];
 };
 
 /**
