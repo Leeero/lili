@@ -117,3 +117,6 @@ tools/design-fidelity/.venv
 .workbuddy/
 # pnpm 本地缓存目录（不应入库）
 .pnpm-store/
+
+# DSH 视觉插件在会话工作区生成的产物目录
+.dsh-vision-toolkit/
