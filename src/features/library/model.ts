@@ -3,30 +3,25 @@ import type { FavoriteItem } from "@/store/favorite";
 
 import { CollectionType } from "@/common/constants/collection";
 
-/**
- * 把接口返回的 type 收敛到详情页认识的三个类型码。
- *
- * `/x/v3/fav/folder/created/list` 的 `type` **不是** 11/21/31 枚举
- * （普通收藏夹返回 0），而 `?? CollectionType.Favorite` 对 0 不兜底
- * （0 不是 nullish）—— 曾因此生成 `?type=0` 的链接，详情页三个分支
- * 全不命中，内容区整片空白。只放行 21/31，其余一律按收藏夹处理。
- */
-const normalizeCollectionType = (type: number | undefined): CollectionType =>
-  type === CollectionType.VideoCollections || type === CollectionType.VideoSeries ? type : CollectionType.Favorite;
+/** 详情路由的 type 码，由 source 决定（三类 id 空间不同，不能靠 type 推导）。 */
+const DETAIL_TYPE_BY_SOURCE: Record<FavoriteItem["source"], CollectionType> = {
+  "favorite-folder": CollectionType.Favorite,
+  season: CollectionType.VideoCollections,
+  series: CollectionType.VideoSeries,
+};
+
+export const getFavoriteItemHref = (item: FavoriteItem): string => {
+  const mid = item.mid ? `&mid=${item.mid}` : "";
+  return `/collection/${item.id}?type=${DETAIL_TYPE_BY_SOURCE[item.source]}${mid}`;
+};
 
 export const adaptFavoriteItemToPlaylist = (item: FavoriteItem, isOwnedByCurrentUser: boolean): PlaylistSummary => ({
-  id: `${item.type === CollectionType.VideoCollections ? "season" : "favorite-folder"}:${item.id}`,
-  source: item.type === CollectionType.VideoCollections ? "season" : "favorite-folder",
+  id: `${item.source}:${item.id}`,
+  source: item.source,
   title: item.title,
   cover: item.cover,
   isOwnedByCurrentUser,
 });
-
-export const getFavoriteItemHref = (item: FavoriteItem) => {
-  const type = normalizeCollectionType(item.type);
-  const mid = item.mid ? `&mid=${item.mid}` : "";
-  return `/collection/${item.id}?type=${type}${mid}`;
-};
 
 /* ---------------------------------------------------------------- 库瓦片
  *
@@ -66,50 +61,26 @@ export interface LibraryTile {
 }
 
 /**
- * 收藏项的瓦片来源。`season` / `series` 之外的一切（含普通收藏夹的 `type = 0`）
- * 都归 `favorite-folder`。
+ * 徽标文案（来自 type：21 合集 / 31 系列 / 其余收藏夹）。
  *
- * 它是 `LibraryTile.key` 前缀与 `badgeOf` 的共同来源，也是设置页显隐配置键
- * （`${source}:${id}`）的生成依据 —— 见 `features/library/grouping.ts`。
+ * 徽标是展示层概念，与 `FavoriteItem.source`（内容加载方式）独立：收藏列表里的
+ * type 21 是「收藏的合集」，徽标为「合集」，其 `source` 为 `season`（按 season_id
+ * 打开合集详情）—— 见 `store/favorite.ts` 的 `favoriteSourceByType`。
  */
-export const favoriteTileSource = (type: number | undefined): LibraryTileSource => {
-  switch (type) {
-    case CollectionType.VideoCollections:
-      return "season";
-    case CollectionType.VideoSeries:
-      return "series";
-    default:
-      return "favorite-folder";
-  }
-};
+const badgeOf = (type: number | undefined): string =>
+  type === CollectionType.VideoCollections ? "合集" : type === CollectionType.VideoSeries ? "系列" : "收藏夹";
 
-const BADGE_BY_SOURCE: Record<LibraryTileSource, string> = {
-  "favorite-folder": "收藏夹",
-  season: "合集",
-  series: "系列",
-  "local-dir": "本地目录",
-};
-
-const badgeOf = (type: number | undefined): { badge: string; source: LibraryTileSource } => {
-  const source = favoriteTileSource(type);
-  return { badge: BADGE_BY_SOURCE[source], source };
-};
-
-export const adaptFavoriteItemToTile = (item: FavoriteItem, isOwnedByCurrentUser: boolean): LibraryTile => {
-  const type = normalizeCollectionType(item.type);
-  const { badge, source } = badgeOf(type);
-  const mid = item.mid ? `&mid=${item.mid}` : "";
-
+export const adaptFavoriteItemToTile = (item: FavoriteItem): LibraryTile => {
   return {
-    key: `${source}:${item.id}`,
+    key: `${item.source}:${item.id}`,
     title: item.title,
-    source,
-    badge,
+    source: item.source,
+    badge: badgeOf(item.type),
     badgeVariant: "default",
     cover: item.cover,
     artKey: `library-${item.id}`,
-    href: `/collection/${item.id}?type=${type}${mid}`,
-    favorite: isOwnedByCurrentUser ? item : undefined,
+    href: getFavoriteItemHref(item),
+    favorite: item,
   };
 };
 

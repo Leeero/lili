@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 
 import { afterEach, describe, expect, test, vi } from "vitest";
 
+import type { FavoriteItem } from "@/store/favorite";
+
 import { CollectionType } from "@/common/constants/collection";
 import LibrarySettings from "@/pages/settings/library-settings";
 import { defaultAppSettings } from "@shared/settings/app-settings";
@@ -18,8 +20,9 @@ import { defaultAppSettings } from "@shared/settings/app-settings";
 
 /** 组件读到的三份 store 数据。用 hoisted 定义，mock 工厂里可以安全引用。 */
 const storeState = vi.hoisted(() => ({
-  createdFavorites: [] as Array<{ id: number; title: string; type?: number }>,
-  collectedFavorites: [] as Array<{ id: number; title: string; type?: number }>,
+  createdFavorites: [] as Array<{ id: number; title: string; type?: number; source: FavoriteItem["source"] }>,
+  collectedFavorites: [] as Array<{ id: number; title: string; type?: number; source: FavoriteItem["source"] }>,
+  seasonSeries: [] as Array<{ id: number; title: string; type?: number; source: FavoriteItem["source"] }>,
   user: undefined as unknown,
 }));
 
@@ -30,6 +33,7 @@ vi.mock("@/store/favorite", () => ({
     selector({
       createdFavorites: storeState.createdFavorites,
       collectedFavorites: storeState.collectedFavorites,
+      seasonSeries: storeState.seasonSeries,
     }),
 }));
 
@@ -96,21 +100,18 @@ const checkboxOf = (container: HTMLElement, title: string) => {
 const currentHiddenKeys = () => formValues.current?.hiddenLibraryKeys;
 
 describe("library settings", () => {
-  test("按三组列出条目，取消勾选的条目写进 hiddenLibraryKeys 且不覆盖其它组", async () => {
+  test("按两组列出条目（我创建的含自建合集/系列），取消勾选写进 hiddenLibraryKeys 且不覆盖另一组", async () => {
     storeState.user = { isLogin: true };
-    storeState.createdFavorites = [{ id: 1, title: "通勤" }];
-    storeState.collectedFavorites = [
-      { id: 2, title: "古典" },
-      { id: 3, title: "纪录片", type: CollectionType.VideoCollections },
-    ];
+    storeState.createdFavorites = [{ id: 1, title: "通勤", source: "favorite-folder" }];
+    storeState.collectedFavorites = [{ id: 2, title: "古典", source: "favorite-folder" }];
+    storeState.seasonSeries = [{ id: 3, title: "纪录片", type: CollectionType.VideoCollections, source: "season" }];
     formValues.current = undefined;
 
     const container = await render(<Harness />);
 
-    expect(container.textContent).toContain("我的歌单");
-    expect(container.textContent).toContain("我收藏的");
-    expect(container.textContent).toContain("合集与系列");
-    // 合集带徽标后缀，避免与同名歌单混淆。
+    expect(container.textContent).toContain("我创建的");
+    expect(container.textContent).toContain("我追的");
+    // 自建合集/系列并进「我创建的」，徽标后缀区分类型。
     expect(container.textContent).toContain("纪录片（合集）");
 
     const first = checkboxOf(container, "通勤");
@@ -134,6 +135,7 @@ describe("library settings", () => {
     storeState.user = undefined;
     storeState.createdFavorites = [];
     storeState.collectedFavorites = [];
+    storeState.seasonSeries = [];
 
     const container = await render(<Harness />);
 

@@ -6,42 +6,65 @@ import { CollectionType } from "@/common/constants/collection";
 import { buildLibraryTileGroups, favoriteTileKey, filterVisibleFavorites } from "@/features/library/grouping";
 import { adaptFavoriteItemToTile } from "@/features/library/model";
 
-const favorite = (id: number, title: string, type?: number): FavoriteItem => ({ id, title, type });
+const folder = (id: number, title: string, type = CollectionType.Favorite): FavoriteItem => ({
+  id,
+  title,
+  type,
+  source:
+    type === CollectionType.VideoCollections
+      ? "season"
+      : type === CollectionType.VideoSeries
+        ? "series"
+        : "favorite-folder",
+});
+const season = (id: number, title: string): FavoriteItem => ({
+  id,
+  title,
+  type: CollectionType.VideoCollections,
+  source: "season",
+});
+const series = (id: number, title: string): FavoriteItem => ({
+  id,
+  title,
+  type: CollectionType.VideoSeries,
+  source: "series",
+});
 
 describe("library grouping", () => {
-  it("拆成我的歌单 / 我收藏的 / 合集与系列，本地目录单列", () => {
+  it("按归属轴拆成我创建的 / 我追的，本地目录单列", () => {
     const groups = buildLibraryTileGroups(
-      [favorite(1, "通勤"), favorite(2, "演唱会", CollectionType.VideoCollections)],
-      [favorite(3, "古典"), favorite(4, "纪录片", CollectionType.VideoSeries)],
+      [folder(1, "通勤"), folder(2, "演唱会")],
+      [folder(3, "古典"), folder(4, "纪录片", CollectionType.VideoCollections)],
+      [season(5, "合集"), series(6, "系列")],
       ["/music/only"],
     );
 
-    expect(groups.created.map(tile => tile.key)).toEqual(["favorite-folder:1"]);
-    expect(groups.collected.map(tile => tile.key)).toEqual(["favorite-folder:3"]);
-    expect(groups.collections.map(tile => [tile.key, tile.badge])).toEqual([
-      ["season:2", "合集"],
-      ["series:4", "系列"],
+    // 我创建的 = 自建收藏夹 + 自建合集/系列（徽标区分类型）。
+    expect(groups.created.map(tile => [tile.key, tile.badge])).toEqual([
+      ["favorite-folder:1", "收藏夹"],
+      ["favorite-folder:2", "收藏夹"],
+      ["season:5", "合集"],
+      ["series:6", "系列"],
+    ]);
+    // 我追的 = 收藏的收藏夹 + 收藏的合集（type 21 source 是 season，徽标仍是「合集」）。
+    expect(groups.followed.map(tile => [tile.key, tile.badge])).toEqual([
+      ["favorite-folder:3", "收藏夹"],
+      ["season:4", "合集"],
     ]);
     expect(groups.local.map(tile => tile.key)).toEqual(["local-dir:/music/only"]);
   });
 
-  it("显隐配置键与瓦片键同值（含 type 为 0 的普通收藏夹）", () => {
-    const items = [
-      favorite(1, "普通"),
-      favorite(2, "缺 type"),
-      favorite(3, "合集", CollectionType.VideoCollections),
-      favorite(4, "系列", CollectionType.VideoSeries),
-      favorite(5, "type=0", 0),
-    ];
+  it("显隐配置键与瓦片键同值", () => {
+    const items = [folder(1, "普通"), folder(2, "缺 type", 0 as CollectionType), season(3, "合集"), series(4, "系列")];
 
     for (const item of items) {
-      expect(favoriteTileKey(item)).toBe(adaptFavoriteItemToTile(item, true).key);
+      expect(favoriteTileKey(item)).toBe(adaptFavoriteItemToTile(item).key);
     }
   });
 
   it("只隐藏被勾掉的条目，其余原样保留", () => {
-    const created = [favorite(1, "通勤"), favorite(2, "综艺", CollectionType.VideoCollections)];
-    const collected = [favorite(3, "古典")];
+    const created = [folder(1, "通勤"), folder(2, "综艺")];
+    const collected = [folder(3, "古典")];
 
     expect(filterVisibleFavorites(created, ["favorite-folder:1"]).map(item => item.id)).toEqual([2]);
     expect(filterVisibleFavorites(collected, ["favorite-folder:1"]).map(item => item.id)).toEqual([3]);
@@ -49,7 +72,7 @@ describe("library grouping", () => {
   });
 
   it("同 id 的收藏夹与合集互不影响（靠来源前缀区分）", () => {
-    const items = [favorite(7, "歌单"), favorite(7, "合集", CollectionType.VideoCollections)];
+    const items = [folder(7, "歌单"), season(7, "合集")];
 
     expect(filterVisibleFavorites(items, ["season:7"]).map(item => item.title)).toEqual(["歌单"]);
     expect(filterVisibleFavorites(items, ["favorite-folder:7"]).map(item => item.title)).toEqual(["合集"]);

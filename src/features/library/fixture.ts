@@ -30,7 +30,7 @@ export const useLibraryFixture = (): boolean => {
 
 const fixtureMeta = (tile: FixtureLibraryTile) => `${tile.trackCount} 首 · ${tile.metaNote}`;
 
-const fixtureTileToLibraryTile = (tile: FixtureLibraryTile, isOwned: boolean): LibraryTile => {
+const fixtureTileToLibraryTile = (tile: FixtureLibraryTile): LibraryTile => {
   if (tile.type === "dir") {
     return {
       ...adaptLocalDirToTile(tile.title),
@@ -50,10 +50,11 @@ const fixtureTileToLibraryTile = (tile: FixtureLibraryTile, isOwned: boolean): L
     type: tile.type,
     mid: SCREEN_01_LIBRARY_FIXTURE.user.mid,
     trackCount: tile.trackCount,
+    source: sourceOf(tile),
   };
 
   return {
-    ...adaptFavoriteItemToTile(favorite, isOwned),
+    ...adaptFavoriteItemToTile(favorite),
     // 封面用设计稿同款占位渐变（artIndex 指向 placeholder-art 的 gradients），
     // 不做哈希挑选 —— 比对要求逐字一致。
     coverGradient: PLACEHOLDER_GRADIENTS[tile.artIndex],
@@ -85,8 +86,8 @@ export const useLibraryFixtureData = (): LibraryFixtureData | null => {
     const { library } = SCREEN_01_LIBRARY_FIXTURE;
 
     return {
-      created: library.created.map(tile => fixtureTileToLibraryTile(tile, true)),
-      collected: library.collected.map(tile => fixtureTileToLibraryTile(tile, false)),
+      created: library.created.map(tile => fixtureTileToLibraryTile(tile)),
+      collected: library.collected.map(tile => fixtureTileToLibraryTile(tile)),
       demoActionKeys: [...library.created, ...library.collected]
         .filter(tile => tile.demoActions)
         .map(tile => (tile.type === "dir" ? `local-dir:${tile.title}` : `${sourceOf(tile)}:${tile.id}`)),
@@ -95,7 +96,7 @@ export const useLibraryFixtureData = (): LibraryFixtureData | null => {
   }, [enabled]);
 };
 
-const sourceOf = (tile: FixtureLibraryTile): string => {
+const sourceOf = (tile: FixtureLibraryTile): FavoriteItem["source"] => {
   switch (tile.type) {
     case CollectionType.VideoCollections:
       return "season";

@@ -27,10 +27,11 @@ const LibrarySettings: React.FC<LibrarySettingsProps> = ({ control }) => {
   const user = useUser(state => state.user);
   const createdFavorites = useFavoritesStore(state => state.createdFavorites);
   const collectedFavorites = useFavoritesStore(state => state.collectedFavorites);
+  const seasonSeries = useFavoritesStore(state => state.seasonSeries);
   const localMusicDirs = useSettings(state => state.localMusicDirs);
 
-  const groups = buildLibraryTileGroups(createdFavorites, collectedFavorites, localMusicDirs);
-  const itemCount = groups.created.length + groups.collected.length + groups.collections.length;
+  const groups = buildLibraryTileGroups(createdFavorites, collectedFavorites, seasonSeries, localMusicDirs);
+  const itemCount = groups.created.length + groups.followed.length;
 
   const renderGroup = (groupName: string, tiles: LibraryTile[], withBadge = false) => (
     <div key={groupName} className="flex w-full items-start gap-6 max-sm:flex-col">
@@ -59,7 +60,9 @@ const LibrarySettings: React.FC<LibrarySettingsProps> = ({ control }) => {
                 disabled={!groupKeys.length}
                 items={tiles.map(tile => ({
                   value: tile.key,
-                  label: withBadge ? `${tile.title}（${tile.badge}）` : tile.title,
+                  // 徽标后缀只在类型需要区分时加（合集/系列/本地目录）；
+                  // 收藏夹是默认态，保持纯标题。
+                  label: withBadge && tile.badge !== "收藏夹" ? `${tile.title}（${tile.badge}）` : tile.title,
                 }))}
               />
             );
@@ -84,9 +87,8 @@ const LibrarySettings: React.FC<LibrarySettingsProps> = ({ control }) => {
           </p>
         ) : (
           <>
-            {renderGroup("我的歌单", groups.created)}
-            {renderGroup("我收藏的", groups.collected)}
-            {renderGroup("合集与系列", groups.collections, true)}
+            {renderGroup("我创建的", groups.created, true)}
+            {renderGroup("我追的", groups.followed, true)}
             {groups.local.length > 0 && (
               <p className="text-default-500 text-sm">本地音乐目录不在此配置，请在「本地音乐」页添加或移除。</p>
             )}

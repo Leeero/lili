@@ -16,13 +16,13 @@ import { LIBRARY_TILE_ACTIONS } from "./fixture";
 
 export interface LibraryViewProps {
   lead: ReactNode;
-  /** 页面内分类 tab（我的歌单 / 我收藏的 / 合集与系列），渲染在页头正下方。 */
+  /** 页面内分类 tab（我创建的 / 我追的），渲染在页头正下方。 */
   tabs?: ReactNode;
   overviewLines: string[];
+  /** 我创建的：自建收藏夹 + 自建合集/系列（徽标区分类型）+ 本地目录。 */
   createdTiles: LibraryTile[];
-  collectedTiles: LibraryTile[];
-  /** 合集与系列（season / series）：从收藏夹里按来源徽标拆出来的第三组。 */
-  collectionTiles: LibraryTile[];
+  /** 我追的：收藏的收藏夹 + 收藏的合集。 */
+  followedTiles: LibraryTile[];
   /** 操作带常驻露出的瓦片 key（夹具演示位；真实模式为空 —— 露出交给悬停）。 */
   demoActionKeys: string[];
   onTilePress: (tile: LibraryTile) => void;
@@ -32,6 +32,10 @@ export interface LibraryViewProps {
   onShuffleAll: () => void;
   /** 批量动作执行中（按钮 loading）。 */
   bulkPending?: boolean;
+  /** 真实页面：壳层已标识页面名，去掉页头，只保留操作工具条。 */
+  compact?: boolean;
+  /** 当前 tab 没有内容时的页内空态（tab 与工具栏仍保留）。 */
+  emptyState?: ReactNode;
 }
 
 const renderTile = (
@@ -77,42 +81,58 @@ export const LibraryView = ({
   tabs,
   overviewLines,
   createdTiles,
-  collectedTiles,
-  collectionTiles,
+  followedTiles,
   demoActionKeys,
   onTilePress,
   onTileAction,
   onPlayAll,
   onShuffleAll,
   bulkPending = false,
+  compact = false,
+  emptyState,
 }: LibraryViewProps) =>
   demoActionKeys.length === 0 ? (
-    <ScrollContainer enableBackToTop className="h-full w-full">
+    // asset4188-scroll：给瓦片悬停底板让出左右各 12px 的外扩画布（见
+    // features/assets/assets-4188.css 顶部）。页面内边距会把内容落点补回去。
+    <ScrollContainer enableBackToTop className="asset4188-scroll h-full">
       <div className="asset4188-page">
-        <header className="asset4188-head">
-          <div>
-            <span className="asset4188-eyebrow">音乐库</span>
-            <h1>我的音乐</h1>
-            <p>{lead}</p>
-          </div>
-          <div className="asset4188-actions">
-            <button type="button" className="is-primary" disabled={bulkPending} onClick={onPlayAll}>
-              全部播放
-            </button>
-            <button type="button" disabled={bulkPending} onClick={onShuffleAll}>
-              随机播放
-            </button>
-          </div>
-        </header>
-        {tabs}
-        <div className="asset4188-stats">
-          {overviewLines.slice(0, 4).map(line => (
-            <span key={line}>
-              <b>{line.match(/[\d,]+/)?.[0] ?? "—"}</b>
-              {line}
-            </span>
-          ))}
-        </div>
+        {compact ? (
+          <>
+            <h1 className="sr-only">我的音乐库</h1>
+            <div className="asset4188-page-bar">
+              <div className="asset4188-page-bar-tabs">{tabs}</div>
+              <div className="asset4188-actions">
+                <button type="button" className="is-primary" disabled={bulkPending} onClick={onPlayAll}>
+                  全部播放
+                </button>
+                <button type="button" disabled={bulkPending} onClick={onShuffleAll}>
+                  随机播放
+                </button>
+              </div>
+            </div>
+            {emptyState}
+          </>
+        ) : (
+          <>
+            <header className="asset4188-head">
+              <div>
+                <span className="asset4188-eyebrow">音乐库</span>
+                <h1>我的音乐</h1>
+                <p>{lead}</p>
+              </div>
+              <div className="asset4188-actions">
+                <button type="button" className="is-primary" disabled={bulkPending} onClick={onPlayAll}>
+                  全部播放
+                </button>
+                <button type="button" disabled={bulkPending} onClick={onShuffleAll}>
+                  随机播放
+                </button>
+              </div>
+            </header>
+            {tabs}
+            {emptyState}
+          </>
+        )}
         {createdTiles.length > 0 && (
           <LibrarySection
             title={`我创建的 · ${createdTiles.length}`}
@@ -121,18 +141,10 @@ export const LibraryView = ({
             onTileAction={onTileAction}
           />
         )}
-        {collectedTiles.length > 0 && (
+        {followedTiles.length > 0 && (
           <LibrarySection
-            title={`我收藏的 · ${collectedTiles.length}`}
-            tiles={collectedTiles}
-            onTilePress={onTilePress}
-            onTileAction={onTileAction}
-          />
-        )}
-        {collectionTiles.length > 0 && (
-          <LibrarySection
-            title={`合集与系列 · ${collectionTiles.length}`}
-            tiles={collectionTiles}
+            title={`我追的 · ${followedTiles.length}`}
+            tiles={followedTiles}
             onTilePress={onTilePress}
             onTileAction={onTileAction}
           />
@@ -169,20 +181,10 @@ export const LibraryView = ({
           </Section>
         )}
 
-        {collectedTiles.length > 0 && (
-          <Section title={`我收藏的 · ${collectedTiles.length} 个播放列表`}>
+        {followedTiles.length > 0 && (
+          <Section title={`我追的 · ${followedTiles.length} 个播放列表`}>
             <MediaGrid columns={4}>
-              {collectedTiles.map(tile =>
-                renderTile(tile, demoActionKeys.includes(tile.key), onTilePress, onTileAction),
-              )}
-            </MediaGrid>
-          </Section>
-        )}
-
-        {collectionTiles.length > 0 && (
-          <Section title={`合集与系列 · ${collectionTiles.length} 个播放列表`}>
-            <MediaGrid columns={4}>
-              {collectionTiles.map(tile =>
+              {followedTiles.map(tile =>
                 renderTile(tile, demoActionKeys.includes(tile.key), onTilePress, onTileAction),
               )}
             </MediaGrid>
