@@ -18,6 +18,7 @@ const Queue = lazy(() => import("./pages/queue"));
 const Search = lazy(() => import("./pages/search"));
 const Settings = lazy(() => import("./pages/settings"));
 const SocialPage = lazy(() => import("./pages/social"));
+const TrackDetail = lazy(() => import("./pages/track-detail"));
 const UserProfile = lazy(() => import("./pages/user-profile"));
 const Folder = lazy(() => import("./pages/video-collection"));
 
@@ -49,6 +50,10 @@ const routes: RouteObject[] = [
       {
         path: "collection/:id",
         element: <Folder />,
+      },
+      {
+        path: "track/:bvid",
+        element: <TrackDetail />,
       },
       {
         path: "user/:id",
