@@ -3,6 +3,8 @@ import type { Data as RankItem } from "@/service/music-comprehensive-web-rank";
 import type { List as NewMusicItem } from "@/service/web-interface-new-music";
 import type { List as NewMusicBannerItem } from "@/service/web-interface-new-music-banner";
 
+import { formatUrlProtocol } from "@/common/utils/url";
+
 const creator = (id?: number | string, name?: string) => {
   if (id === undefined && !name) return undefined;
   return {
@@ -35,7 +37,7 @@ export const adaptRankItemToTrack = (item: RankItem, fallback: string): Track =>
     source: "bilibili-video",
     title: item.music_title || archive?.title || "未命名内容",
     album: item.album || undefined,
-    cover: item.cover || archive?.cover,
+    cover: formatUrlProtocol(item.cover || archive?.cover),
     creator: creator(undefined, item.author || archive?.username),
     duration: archive?.duration,
     playCount: archive?.vv_count,

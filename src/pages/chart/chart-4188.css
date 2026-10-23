@@ -12,3 +12,243 @@
   width: 100%;
   padding: 8px 14px 48px 0;
 }
+
+/* ---------- 吸顶工具条 ---------- */
+.chart4188-section {
+  margin-top: 0;
+}
+
+.chart4188-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin-bottom: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lili-4188-border);
+  background: var(--lili-4188-canvas);
+}
+
+.chart4188-toolbar + .asset4188-list {
+  border-top: 0;
+}
+
+.chart4188-title {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.chart4188-title h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.chart4188-meta {
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart4188-playall {
+  display: inline-flex;
+  height: 36px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--lili-4188-radius-pill);
+  background: var(--lili-4188-action);
+  color: var(--lili-4188-text-primary);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    filter var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    transform var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.chart4188-playall:hover {
+  filter: brightness(1.08);
+}
+
+.chart4188-playall:active {
+  transform: scale(var(--lili-4188-press-scale));
+}
+
+.chart4188-playall:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chart4188-playall:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+/* ---------- 首屏骨架 ---------- */
+.chart4188-skeleton {
+  border-top: 1px solid var(--lili-4188-border);
+}
+
+.chart4188-skeleton-row {
+  display: grid;
+  grid-template-columns: 36px 56px minmax(180px, 1.5fr) minmax(140px, 1fr) 90px 216px;
+  align-items: center;
+  gap: 10px;
+  min-height: 76px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--lili-4188-border);
+}
+
+.chart4188-skeleton-index,
+.chart4188-skeleton-middle,
+.chart4188-skeleton-end,
+.chart4188-skeleton-cover,
+.chart4188-skeleton-copy i {
+  border-radius: 6px;
+  background: var(--lili-4188-surface-hover);
+  animation: chart4188-pulse 1.4s ease-in-out infinite;
+}
+
+.chart4188-skeleton-index,
+.chart4188-skeleton-middle,
+.chart4188-skeleton-end {
+  height: 10px;
+}
+
+.chart4188-skeleton-end {
+  width: 32px;
+  justify-self: end;
+}
+
+.chart4188-skeleton-cover {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+}
+
+.chart4188-skeleton-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.chart4188-skeleton-copy i {
+  display: block;
+  height: 12px;
+}
+
+.chart4188-skeleton-copy i:last-child {
+  width: 60%;
+  height: 10px;
+}
+
+/* ---------- 加载更多 / 到底 ---------- */
+.chart4188-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.chart4188-end {
+  margin: 22px 0 0;
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.chart4188-more-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+}
+
+.chart4188-more-error button {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chart4188-more-error button:hover {
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-primary);
+}
+
+.chart4188-more-error button:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+@keyframes chart4188-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart4188-skeleton-index,
+  .chart4188-skeleton-middle,
+  .chart4188-skeleton-end,
+  .chart4188-skeleton-cover,
+  .chart4188-skeleton-copy i {
+    animation: none;
+  }
+}
+
+@media (width<=980px) {
+  .chart4188-skeleton-row {
+    grid-template-columns: 30px 52px minmax(150px, 1fr) 80px 196px;
+  }
+
+  .chart4188-skeleton-middle {
+    display: none;
+  }
+}
+
+@media (width<=640px) {
+  .chart4188-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chart4188-title h2 {
+    font-size: 18px;
+  }
+
+  .chart4188-playall {
+    height: 32px;
+  }
+
+  .chart4188-skeleton-row {
+    grid-template-columns: 48px minmax(0, 1fr) auto 48px;
+    padding-inline: 4px;
+  }
+
+  .chart4188-skeleton-index,
+  .chart4188-skeleton-middle {
+    display: none;
+  }
+
+  .chart4188-skeleton-cover {
+    width: 48px;
+    height: 48px;
+  }
+}
