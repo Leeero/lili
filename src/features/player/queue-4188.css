@@ -32,6 +32,30 @@
   font-size: 14px;
 }
 
+.queue4188-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.queue4188-bar-tabs {
+  min-width: 0;
+}
+
+.queue4188-bar .queue4188-actions button.is-primary,
+.queue4188-bar .queue4188-actions button.is-primary:hover {
+  border-color: transparent;
+  background: var(--lili-4188-action);
+  color: var(--lili-4188-text-primary);
+}
+
+.queue4188-bar .queue4188-actions button.is-primary:hover {
+  filter: brightness(1.08);
+}
+
 .queue4188-actions {
   display: flex;
   align-items: center;
@@ -190,6 +214,12 @@
 }
 
 @media (width <= 640px) {
+  .queue4188-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .queue4188-head {
     align-items: flex-start;
     flex-direction: column;

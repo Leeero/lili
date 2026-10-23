@@ -113,6 +113,7 @@ const QueuePage = () => {
       columns={queueColumns(["#", "标题", "来源 · 状态", "时长"])}
       rows={rows}
       currentId={playId}
+      compact
       onPillPress={key => {
         if (key === "play-all") {
           const first = filtered[0];

@@ -32,6 +32,10 @@ interface LocalMusicViewProps {
   onDelete: () => void;
   onCardPress: (id: string) => void;
   onCardAction: (id: string, action: string) => void;
+  /** 真实页面：壳层已标识页面名，去掉页头，只保留操作工具条。 */
+  compact?: boolean;
+  /** 当前目录/筛选没有曲目时的页内空态（tab 与工具栏仍保留）。 */
+  emptyState?: ReactNode;
 }
 
 const CARD_ACTIONS: ContextMenuItem[] = [
@@ -64,53 +68,82 @@ export const LocalMusicView = ({
   onDelete,
   onCardPress,
   onCardAction,
+  compact = false,
+  emptyState,
 }: LocalMusicViewProps) =>
   !note ? (
     <ScrollContainer enableBackToTop className="h-full w-full">
       <div className="asset4188-page">
-        <header className="asset4188-head">
-          <div>
-            <span className="asset4188-eyebrow">设备上的音乐</span>
-            <h1>{title}</h1>
-            <p>{lead}</p>
-          </div>
-          <div className="asset4188-actions">
-            <button type="button" className="is-primary" disabled={busy} onClick={onPlayAll}>
-              全部播放
-            </button>
-            <button type="button" disabled={busy} onClick={onShuffle}>
-              随机播放
-            </button>
-            <button type="button" disabled={busy} onClick={onRescan}>
-              重新扫描
-            </button>
-            <button type="button" className="is-danger" disabled={!selectedId || busy} onClick={onDelete}>
-              删除文件
-            </button>
-          </div>
-        </header>
-        {tabs}
-        <section className="asset4188-section">
-          <div className="asset4188-section-head">
-            <h2>本地曲目 · {cards.length}</h2>
-          </div>
-          <AssetTrackList
-            label="本地曲目"
-            rows={cards.map((card, index) => ({
-              ...card,
-              index: index + 1,
-              subtitle: card.meta,
-              middle: card.badge,
-              end: card.format,
-              current: card.id === selectedId,
-            }))}
-            actions={ROW_ACTIONS}
-            onAction={(card, action) => {
-              if (action === "play") onCardPress(card.id);
-              else onCardAction(card.id, action);
-            }}
-          />
-        </section>
+        {compact ? (
+          <>
+            <h1 className="sr-only">{title}</h1>
+            <div className="asset4188-page-bar">
+              <div className="asset4188-page-bar-tabs">{tabs}</div>
+              <div className="asset4188-actions">
+                <button type="button" className="is-primary" disabled={busy} onClick={onPlayAll}>
+                  全部播放
+                </button>
+                <button type="button" disabled={busy} onClick={onShuffle}>
+                  随机播放
+                </button>
+                <button type="button" disabled={busy} onClick={onRescan}>
+                  重新扫描
+                </button>
+                <button type="button" className="is-danger" disabled={!selectedId || busy} onClick={onDelete}>
+                  删除文件
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <header className="asset4188-head">
+              <div>
+                <span className="asset4188-eyebrow">设备上的音乐</span>
+                <h1>{title}</h1>
+                <p>{lead}</p>
+              </div>
+              <div className="asset4188-actions">
+                <button type="button" className="is-primary" disabled={busy} onClick={onPlayAll}>
+                  全部播放
+                </button>
+                <button type="button" disabled={busy} onClick={onShuffle}>
+                  随机播放
+                </button>
+                <button type="button" disabled={busy} onClick={onRescan}>
+                  重新扫描
+                </button>
+                <button type="button" className="is-danger" disabled={!selectedId || busy} onClick={onDelete}>
+                  删除文件
+                </button>
+              </div>
+            </header>
+            {tabs}
+          </>
+        )}
+        {emptyState ?? (
+          <section className="asset4188-section">
+            <div className="asset4188-section-head">
+              <h2>本地曲目 · {cards.length}</h2>
+            </div>
+            <AssetTrackList
+              label="本地曲目"
+              rows={cards.map((card, index) => ({
+                ...card,
+                index: index + 1,
+                subtitle: card.meta,
+                middle: card.badge,
+                end: card.format,
+                current: card.id === selectedId,
+              }))}
+              actions={ROW_ACTIONS}
+              onAction={(card, action) => {
+                if (action === "play") onCardPress(card.id);
+                else onCardAction(card.id, action);
+              }}
+            />
+          </section>
+        )}
       </div>
     </ScrollContainer>
   ) : (

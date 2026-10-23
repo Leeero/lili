@@ -7,36 +7,28 @@
   padding: 8px 14px 48px 0;
 }
 
-.manage4188-head {
+.manage4188-bar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 30px;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
-.manage4188-head > div:first-child > span,
-.settings4188-head > span {
-  color: var(--lili-4188-action);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+.manage4188-bar-tabs {
+  min-width: 0;
 }
 
-.manage4188-head h1,
-.settings4188-head h1 {
-  margin: 6px 0 8px;
+.manage4188-bar .manage4188-actions button.is-primary,
+.manage4188-bar .manage4188-actions button.is-primary:hover {
+  border-color: transparent;
+  background: var(--lili-4188-action);
   color: var(--lili-4188-text-primary);
-  font-size: 36px;
-  line-height: 1.1;
-  letter-spacing: -1px;
 }
 
-.manage4188-head p,
-.settings4188-head p {
-  margin: 0;
-  color: var(--lili-4188-text-secondary);
-  font-size: 14px;
+.manage4188-bar .manage4188-actions button.is-primary:hover {
+  filter: brightness(1.08);
 }
 
 .manage4188-actions {
@@ -237,10 +229,6 @@
   margin: 0 auto;
 }
 
-.settings4188-head {
-  margin-bottom: 30px;
-}
-
 .settings4188-nav {
   padding: 7px;
   border: 1px solid var(--lili-4188-border);
@@ -267,11 +255,6 @@
 }
 
 @media (width<=980px) {
-  .manage4188-head {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .manage4188-task {
     grid-template-columns: minmax(0, 1fr) minmax(180px, 260px);
   }
@@ -294,9 +277,10 @@
     white-space: nowrap;
   }
 
-  .manage4188-head h1,
-  .settings4188-head h1 {
-    font-size: 30px;
+  .manage4188-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .manage4188-actions {

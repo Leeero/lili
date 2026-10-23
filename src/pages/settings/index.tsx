@@ -236,11 +236,7 @@ const SettingsDetails = ({ selectedTab }: { selectedTab: SettingsTab }) => {
   return (
     <ScrollContainer enableBackToTop className="h-full w-full">
       <div className="settings4188-page">
-        <div className="settings4188-head">
-          <span>应用偏好</span>
-          <h1>设置</h1>
-          <p>管理 lili 的界面、播放与本地应用偏好</p>
-        </div>
+        <h1 className="sr-only">设置</h1>
         <div className="flex w-full items-start max-md:flex-col">
           <nav
             aria-label="设置分类"

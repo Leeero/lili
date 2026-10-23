@@ -138,8 +138,8 @@ const LocalMusicPage = () => {
       />
     );
   }
-  if (!cards.length) {
-    return (
+  const emptyState =
+    cards.length === 0 ? (
       <PageState
         kind="empty"
         title="当前筛选下没有本地音乐"
@@ -147,8 +147,7 @@ const LocalMusicPage = () => {
         actionLabel="重新扫描"
         onAction={() => void scan()}
       />
-    );
-  }
+    ) : undefined;
 
   return (
     <LocalMusicView
@@ -167,6 +166,8 @@ const LocalMusicPage = () => {
         if (entry) void executeTrackAction("play", entry.track);
       }}
       onCardAction={handleCardAction}
+      emptyState={emptyState}
+      compact
     />
   );
 };

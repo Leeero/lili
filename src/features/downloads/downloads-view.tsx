@@ -132,12 +132,9 @@ export const DownloadsView = ({
     <ScrollContainer enableBackToTop className="h-full w-full">
       {variant === "card" ? (
         <div className="manage4188-page">
-          <header className="manage4188-head">
-            <div>
-              <span>离线内容</span>
-              <h1>{title}</h1>
-              <p>{lead}</p>
-            </div>
+          <h1 className="sr-only">{title}</h1>
+          <div className="manage4188-bar">
+            <div className="manage4188-bar-tabs">{tabs}</div>
             <div className="manage4188-actions">
               {pills.map(pill => (
                 <button
@@ -154,8 +151,7 @@ export const DownloadsView = ({
                 </button>
               ))}
             </div>
-          </header>
-          {tabs}
+          </div>
           <section className="manage4188-downloads">
             <h2>{sectionTitle}</h2>
             {rows.length === 0 ? (
