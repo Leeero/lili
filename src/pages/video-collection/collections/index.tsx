@@ -1,192 +1,120 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { useParams } from "react-router";
 
-import { useRequest } from "ahooks";
-
 import { CollectionType } from "@/common/constants/collection";
-import { type ScrollRefObject } from "@/components/scroll-container";
-import { executePlaylistBulkAction } from "@/features/playlist/bulk-actions";
-import { PlaylistDetail } from "@/features/playlist/playlist-detail";
-import { PlaylistTrackView } from "@/features/playlist/playlist-track-view";
 import { adaptCollectionMediaToTrack } from "@/features/playlist/tracks";
-import { executeTrackAction, type TrackActionKey } from "@/features/track/actions";
-import SegmentNav from "@/layout/topbar/segment-nav";
-import { useRouteSegments } from "@/layout/use-route-segments";
 import { postFavSeasonFav } from "@/service/fav-season-fav";
 import { postFavSeasonUnfav } from "@/service/fav-season-unfav";
-import { getUserVideoArchivesList } from "@/service/user-video-archives-list";
+import { getUserVideoArchivesList, type Media } from "@/service/user-video-archives-list";
 import { useFavoritesStore } from "@/store/favorite";
 import { useUser } from "@/store/user";
 
-import Header from "../header";
-import Operations from "../operation";
+import type { CollectionDetailConfig } from "../detail/types";
+
+import { CollectionDetail } from "../detail/collection-detail";
 import { getContextMenus } from "./menu";
 
-/** 视频合集 */
+interface SeasonInfo {
+  id: number;
+  title: string;
+  cover: string;
+  intro: string;
+  media_count: number;
+  upper?: { mid: number; name: string };
+}
+
+/** 视频合集。一次性全量 + 客户端过滤排序；收藏切换走 season 接口。 */
 const VideoCollections = () => {
   const { id } = useParams();
-  const user = useUser(state => state.user);
+  const userMid = useUser(state => state.user?.mid);
   const collectedFavorites = useFavoritesStore(state => state.collectedFavorites);
   const addCollectedFavorite = useFavoritesStore(state => state.addCollectedFavorite);
   const rmCollectedFavorite = useFavoritesStore(state => state.rmCollectedFavorite);
-  const isFavorite = collectedFavorites?.some(item => item.id === Number(id));
 
-  const [keyword, setKeyword] = useState<string>();
-  const [order, setOrder] = useState("pubtime");
+  // 合集接口 info 与 medias 同响应；fetchInfo 时带出到 ref，client 策略读取。
+  // 挂组件实例上（useRef），重渲染不丢。
+  const seasonMediasRef = useRef<Media[]>([]);
 
-  const scrollRef = useRef<ScrollRefObject>(null);
-  const { segments, activeKey } = useRouteSegments();
-  const tabs = segments.length > 0 ? <SegmentNav segments={segments} activeKey={activeKey} /> : null;
+  const config: CollectionDetailConfig<Media, SeasonInfo> = useMemo(
+    () => ({
+      collectionType: CollectionType.VideoCollections,
 
-  const { data, loading } = useRequest(
-    async () => {
-      if (!id) {
-        return;
-      }
+      fetchInfo: async seasonId => {
+        const res = await getUserVideoArchivesList({ season_id: Number(seasonId) });
+        const data = res?.data;
+        if (!data) return undefined;
+        seasonMediasRef.current = data.medias ?? [];
+        return data.info;
+      },
 
-      const res = await getUserVideoArchivesList({
-        season_id: Number(id),
-      });
-      return res?.data;
-    },
-    {
-      refreshDeps: [id],
-    },
-  );
+      listStrategy: {
+        kind: "client",
+        fetchAll: async () => seasonMediasRef.current,
+      },
 
-  useEffect(() => {
-    if (id) {
-      setKeyword("");
-      setOrder("pubtime");
-    }
-  }, [id]);
+      adaptToTrack: adaptCollectionMediaToTrack,
+      entryKey: media => `bilibili-video:${media.bvid}`,
+      entryTimestamp: media => media.pubtime,
 
-  // 过滤和排序媒体数据
-  const filteredMedias = useMemo(() => {
-    const medias = data?.medias ?? [];
+      orderOptions: [
+        { key: "pubtime", label: "最近投稿" },
+        { key: "play", label: "最多播放" },
+        { key: "collect", label: "最多收藏" },
+      ],
 
-    // 根据搜索关键词过滤title
-    let result = medias;
-    if (keyword) {
-      result = medias.filter(item => item.title.toLowerCase().includes(keyword.toLowerCase()));
-    }
-
-    // 根据排序条件排序
-    switch (order) {
-      case "play":
-        result = [...result].sort((a, b) => (b.cnt_info?.play || 0) - (a.cnt_info?.play || 0));
-        break;
-      case "collect":
-        result = [...result].sort((a, b) => (b.cnt_info?.collect || 0) - (a.cnt_info?.collect || 0));
-        break;
-      case "pubtime":
-        result = [...result].sort((a, b) => (b.pubtime || 0) - (a.pubtime || 0));
-        break;
-      default:
-        break;
-    }
-
-    return result;
-  }, [data?.medias, keyword, order]);
-
-  const onPlayAll = () => {
-    void executePlaylistBulkAction("play-all", filteredMedias.map(adaptCollectionMediaToTrack));
-  };
-
-  const addToPlayList = () => {
-    void executePlaylistBulkAction("add-all", filteredMedias.map(adaptCollectionMediaToTrack));
-  };
-
-  const toggleFavorite = async () => {
-    if (isFavorite) {
-      // 取消收藏
-      const res = await postFavSeasonUnfav({
-        season_id: Number(id),
-        platform: "web",
-      });
-
-      if (res.code === 0) {
-        rmCollectedFavorite(Number(id));
-      }
-    } else {
-      // 收藏
-      const res = await postFavSeasonFav({
-        season_id: Number(id),
-        platform: "web",
-      });
-
-      if (res.code === 0) {
-        addCollectedFavorite({
-          id: Number(id),
-          title: data?.info?.title || "未命名合集",
-          cover: data?.info?.cover,
-          type: CollectionType.VideoCollections,
-          mid: data?.info?.upper?.mid,
-        });
-      }
-    }
-  };
-
-  const isCreatedBySelf = data?.info?.upper?.mid === user?.mid;
-
-  const getScrollElement = useCallback(() => {
-    return scrollRef.current?.osInstance()?.elements().viewport as HTMLElement | null;
-  }, []);
-  const trackEntries = filteredMedias.map(item => ({
-    id: `bilibili-video:${item.bvid}`,
-    track: adaptCollectionMediaToTrack(item),
-    source: item,
-    timestamp: item.pubtime,
-  }));
-
-  return (
-    <PlaylistDetail
-      scrollRef={scrollRef}
-      resetKey={id}
-      header={
-        <Header
-          type={CollectionType.VideoCollections}
-          cover={data?.info?.cover}
-          title={data?.info?.title}
-          desc={data?.info?.intro}
-          upMid={data?.info?.upper?.mid}
-          mediaCount={data?.info?.media_count}
-        />
-      }
-      tabs={tabs}
-      actions={
-        <Operations
-          loading={loading}
-          type={CollectionType.VideoCollections}
-          order={order}
-          onKeywordSearch={setKeyword}
-          onOrderChange={setOrder}
-          orderOptions={[
-            { key: "pubtime", label: "最近投稿" },
-            { key: "play", label: "最多播放" },
-            { key: "collect", label: "最多收藏" },
-          ]}
-          mediaCount={data?.info?.media_count}
-          isFavorite={isFavorite}
-          isCreatedBySelf={isCreatedBySelf}
-          onToggleFavorite={toggleFavorite}
-          onPlayAll={onPlayAll}
-          onAddToPlayList={addToPlayList}
-        />
-      }
-    >
-      <PlaylistTrackView
-        entries={trackEntries}
-        loading={loading}
-        getScrollElement={getScrollElement}
-        getActions={getContextMenus}
-        onAction={(key, entry) =>
-          void executeTrackAction(key === "bililink" ? "open-source" : (key as TrackActionKey), entry.track)
+      sortMedias: (medias, order) => {
+        switch (order) {
+          case "play":
+            return medias.sort((a, b) => (b.cnt_info?.play || 0) - (a.cnt_info?.play || 0));
+          case "collect":
+            return medias.sort((a, b) => (b.cnt_info?.collect || 0) - (a.cnt_info?.collect || 0));
+          case "pubtime":
+            return medias.sort((a, b) => (b.pubtime || 0) - (a.pubtime || 0));
+          default:
+            return medias;
         }
-        onPlay={entry => void executeTrackAction("play", entry.track)}
-      />
-    </PlaylistDetail>
+      },
+
+      header: info => ({
+        cover: info?.cover,
+        title: info?.title,
+        desc: info?.intro,
+        upMid: info?.upper?.mid,
+        mediaCount: info?.media_count,
+      }),
+
+      isCreatedBySelf: info => info?.upper?.mid === userMid,
+
+      favoriteToggle: {
+        isFavorite: () => collectedFavorites?.some(item => item.id === Number(id)) ?? false,
+        toggle: async info => {
+          if (collectedFavorites?.some(item => item.id === Number(id))) {
+            const res = await postFavSeasonUnfav({ season_id: Number(id), platform: "web" });
+            if (res.code === 0) rmCollectedFavorite(Number(id));
+          } else {
+            const res = await postFavSeasonFav({ season_id: Number(id), platform: "web" });
+            if (res.code === 0) {
+              addCollectedFavorite({
+                id: Number(id),
+                title: info?.title || "未命名合集",
+                cover: info?.cover,
+                type: CollectionType.VideoCollections,
+                mid: info?.upper?.mid,
+                // 收藏后立即按 season_id 打开（乐观更新拿不到收藏夹 mlid）；刷新后
+                // 收藏列表会以 mlid 重写为 favorite-folder。
+                source: "season",
+              });
+            }
+          }
+        },
+      },
+
+      menuItems: () => getContextMenus(),
+    }),
+    [id, userMid, collectedFavorites, addCollectedFavorite, rmCollectedFavorite],
   );
+
+  return <CollectionDetail id={id} config={config} />;
 };
 
 export default VideoCollections;

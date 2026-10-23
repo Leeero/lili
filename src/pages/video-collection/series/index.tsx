@@ -1,196 +1,105 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { useParams } from "react-router";
-
-import { useRequest } from "ahooks";
 
 import type { Media } from "@/service/user-video-archives-list";
 
 import { CollectionType } from "@/common/constants/collection";
-import { type ScrollRefObject } from "@/components/scroll-container";
-import { executePlaylistBulkAction } from "@/features/playlist/bulk-actions";
-import { PlaylistDetail } from "@/features/playlist/playlist-detail";
-import { PlaylistTrackView } from "@/features/playlist/playlist-track-view";
 import { adaptCollectionMediaToTrack } from "@/features/playlist/tracks";
-import { executeTrackAction, type TrackActionKey } from "@/features/track/actions";
-import SegmentNav from "@/layout/topbar/segment-nav";
-import { useRouteSegments } from "@/layout/use-route-segments";
 import { getSeriesArchives } from "@/service/series-archives";
-import { getSeriesInfo } from "@/service/series-info";
+import { getSeriesInfo, type SeriesMeta } from "@/service/series-info";
 import { useUser } from "@/store/user";
 
-import { getContextMenus } from "../collections/menu";
-import Header from "../header";
-import Operations from "../operation";
+import type { CollectionDetailConfig } from "../detail/types";
 
+import { getContextMenus } from "../collections/menu";
+import { CollectionDetail } from "../detail/collection-detail";
+
+/** 系列详情。先拉 meta，再按 ps=30 增量追加稿件；客户端过滤排序；无收藏切换。 */
 const Series = () => {
   const { id } = useParams();
-  const user = useUser(state => state.user);
+  const userMid = useUser(state => state.user?.mid);
 
-  const [keyword, setKeyword] = useState<string>();
-  const [order, setOrder] = useState("pubtime");
+  // 增量分页的页码游标，挂组件实例上，重渲染不丢。
+  const pageNumRef = useRef(1);
 
-  const scrollRef = useRef<ScrollRefObject>(null);
-  const { segments, activeKey } = useRouteSegments();
-  const tabs = segments.length > 0 ? <SegmentNav segments={segments} activeKey={activeKey} /> : null;
+  const config: CollectionDetailConfig<Media, SeriesMeta> = useMemo(
+    () => ({
+      collectionType: CollectionType.VideoSeries,
 
-  const { data: meta, loading: infoLoading } = useRequest(
-    async () => {
-      if (!id) return;
-      const res = await getSeriesInfo({ series_id: Number(id) });
-      return res?.data?.meta;
-    },
-    {
-      ready: Boolean(id),
-      refreshDeps: [id],
-    },
-  );
+      fetchInfo: async seriesId => {
+        pageNumRef.current = 1;
+        const res = await getSeriesInfo({ series_id: Number(seriesId) });
+        return res?.data?.meta;
+      },
 
-  const isCreatedBySelf = Boolean(meta?.mid) && Boolean(user?.mid) && meta?.mid === user?.mid;
+      listStrategy: {
+        kind: "client",
+        append: true,
+        fetchAll: async (seriesId, meta) => {
+          if (!meta?.mid) return null;
+          const res = await getSeriesArchives({
+            mid: Number(meta.mid),
+            series_id: Number(seriesId),
+            sort: "desc",
+            pn: pageNumRef.current,
+            ps: 30,
+          });
+          const archives = res?.data?.archives ?? [];
+          if (archives.length) pageNumRef.current += 1;
+          return archives.map(a => ({
+            id: a.aid,
+            title: a.title,
+            cover: a.pic,
+            duration: a.duration,
+            pubtime: a.pubdate,
+            bvid: a.bvid,
+            upper: { mid: Number(meta.mid), name: "" },
+            cnt_info: { collect: 0, play: a.stat?.view ?? 0, danmaku: 0, vt: a.stat?.vt ?? 0 },
+            enable_vt: Number(a.enable_vt ?? 0),
+            vt_display: a.vt_display,
+            is_self_view: false,
+          }));
+        },
+        hasMore: (medias, meta) => medias.length < (meta?.total ?? 0),
+      },
 
-  const [medias, setMedias] = useState<Media[]>([]);
-  const [pageNum, setPageNum] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loadingMore, setLoadingMore] = useState(false);
+      adaptToTrack: adaptCollectionMediaToTrack,
+      entryKey: media => `bilibili-video:${media.bvid}`,
+      entryTimestamp: media => media.pubtime,
 
-  useEffect(() => {
-    setMedias([]);
-    setPageNum(1);
-    setTotalCount(0);
-    setKeyword("");
-    setOrder("pubtime");
-  }, [id]);
+      orderOptions: [
+        { key: "pubtime", label: "最近投稿" },
+        { key: "play", label: "最多播放" },
+      ],
 
-  const fetchArchives = useCallback(async () => {
-    if (!id || !meta || loadingMore) return;
-    try {
-      setLoadingMore(true);
-      const res = await getSeriesArchives({
-        mid: Number(meta.mid),
-        series_id: Number(id),
-        sort: "desc",
-        pn: pageNum,
-        ps: 30,
-      });
-      const archives = res?.data?.archives ?? [];
-      const mapped: Media[] = archives.map(a => ({
-        id: a.aid,
-        title: a.title,
-        cover: a.pic,
-        duration: a.duration,
-        pubtime: a.pubdate,
-        bvid: a.bvid,
-        upper: { mid: Number(meta.mid), name: "" },
-        cnt_info: { collect: 0, play: a.stat?.view ?? 0, danmaku: 0, vt: a.stat?.vt ?? 0 },
-        enable_vt: Number(a.enable_vt ?? 0),
-        vt_display: a.vt_display,
-        is_self_view: false,
-      }));
-      setMedias(prev => [...prev].concat(mapped));
-      const total = res?.data?.page?.total ?? 0;
-      setTotalCount(prev => (prev > 0 ? prev : total));
-      setPageNum(prev => prev + 1);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [id, meta, loadingMore, pageNum]);
-
-  useEffect(() => {
-    if (meta?.total) {
-      fetchArchives();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meta]);
-
-  const filteredMedias = useMemo(() => {
-    let result = medias;
-    if (keyword) {
-      result = result.filter(item => item.title.toLowerCase().includes(keyword.toLowerCase()));
-    }
-    switch (order) {
-      case "play":
-        result = [...result].sort((a, b) => (b.cnt_info?.play || 0) - (a.cnt_info?.play || 0));
-        break;
-      case "pubtime":
-        result = [...result].sort((a, b) => (b.pubtime || 0) - (a.pubtime || 0));
-        break;
-      default:
-        break;
-    }
-    return result;
-  }, [medias, keyword, order]);
-
-  const onPlayAll = () => {
-    void executePlaylistBulkAction("play-all", filteredMedias.map(adaptCollectionMediaToTrack));
-  };
-
-  const addToPlayList = () => {
-    void executePlaylistBulkAction("add-all", filteredMedias.map(adaptCollectionMediaToTrack));
-  };
-
-  const getScrollElement = useCallback(() => {
-    return scrollRef.current?.osInstance()?.elements().viewport as HTMLElement | null;
-  }, []);
-
-  const hasMore = useMemo(() => {
-    const total = totalCount || meta?.total || 0;
-    return medias.length < total;
-  }, [medias.length, totalCount, meta?.total]);
-
-  const initialLoading = infoLoading || (medias.length === 0 && loadingMore);
-  const trackEntries = filteredMedias.map(item => ({
-    id: `bilibili-video:${item.bvid}`,
-    track: adaptCollectionMediaToTrack(item),
-    source: item,
-    timestamp: item.pubtime,
-  }));
-
-  return (
-    <PlaylistDetail
-      scrollRef={scrollRef}
-      resetKey={id}
-      header={
-        <Header
-          type={CollectionType.VideoSeries}
-          cover={medias?.[0]?.cover}
-          title={meta?.name}
-          desc={meta?.description}
-          upMid={meta?.mid}
-          mediaCount={meta?.total}
-        />
-      }
-      tabs={tabs}
-      actions={
-        <Operations
-          loading={initialLoading}
-          type={CollectionType.VideoSeries}
-          order={order}
-          onKeywordSearch={setKeyword}
-          onOrderChange={setOrder}
-          orderOptions={[
-            { key: "pubtime", label: "最近投稿" },
-            { key: "play", label: "最多播放" },
-          ]}
-          mediaCount={meta?.total}
-          isCreatedBySelf={isCreatedBySelf}
-          onPlayAll={onPlayAll}
-          onAddToPlayList={addToPlayList}
-        />
-      }
-    >
-      <PlaylistTrackView
-        entries={trackEntries}
-        loading={initialLoading || loadingMore}
-        getScrollElement={getScrollElement}
-        getActions={getContextMenus}
-        onAction={(key, entry) =>
-          void executeTrackAction(key === "bililink" ? "open-source" : (key as TrackActionKey), entry.track)
+      sortMedias: (medias, order) => {
+        switch (order) {
+          case "play":
+            return medias.sort((a, b) => (b.cnt_info?.play || 0) - (a.cnt_info?.play || 0));
+          case "pubtime":
+            return medias.sort((a, b) => (b.pubtime || 0) - (a.pubtime || 0));
+          default:
+            return medias;
         }
-        onPlay={entry => void executeTrackAction("play", entry.track)}
-        hasMore={hasMore}
-        onLoadMore={fetchArchives}
-      />
-    </PlaylistDetail>
+      },
+
+      // 系列 meta 没有 cover，沿用改动前行为：取第一篇稿件封面。
+      header: (info, medias) => ({
+        cover: medias[0]?.cover,
+        title: info?.name,
+        desc: info?.description,
+        upMid: info?.mid,
+        mediaCount: info?.total,
+      }),
+
+      isCreatedBySelf: info => Boolean(info?.mid) && Boolean(userMid) && info?.mid === userMid,
+
+      menuItems: () => getContextMenus(),
+    }),
+    [userMid],
   );
+
+  return <CollectionDetail id={id} config={config} />;
 };
 
 export default Series;

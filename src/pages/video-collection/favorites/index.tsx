@@ -1,438 +1,234 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 
 import { addToast, useDisclosure } from "@heroui/react";
-import { useRequest } from "ahooks";
+
+import type { FavResourceInfo } from "@/service/fav-resource-infos";
 
 import { adaptFavoriteResourceToTrack } from "@/adapters/track/favorite";
 import { CollectionType } from "@/common/constants/collection";
 import { getAllFavTracks } from "@/common/utils/fav";
 import FavoritesEditModal from "@/components/favorites-edit-modal";
-import { type ScrollRefObject } from "@/components/scroll-container";
-import { executePlaylistBulkAction } from "@/features/playlist/bulk-actions";
-import { PlaylistDetail } from "@/features/playlist/playlist-detail";
-import { PlaylistTrackView } from "@/features/playlist/playlist-track-view";
-import { executeTrackAction, type TrackActionKey } from "@/features/track/actions";
-import SegmentNav from "@/layout/topbar/segment-nav";
-import { useRouteSegments } from "@/layout/use-route-segments";
+import { executeTrackAction } from "@/features/track/actions";
 import { postFavFolderFav } from "@/service/fav-folder-fav";
-import { getFavFolderInfo } from "@/service/fav-folder-info";
+import { getFavFolderInfo, type FavFolderInfoData } from "@/service/fav-folder-info";
 import { postFavFolderUnfav } from "@/service/fav-folder-unfav";
 import { getFavResourceList, type FavMedia } from "@/service/fav-resource";
 import { postFavResourceBatchDel } from "@/service/fav-resource-batch-del";
 import { postFavResourceClean } from "@/service/fav-resource-clean";
-import { useFavFolderItemsStore } from "@/store/fav-folder-items";
 import { useFavoritesStore } from "@/store/favorite";
 import { useModalStore } from "@/store/modal";
 import { useMusicFavStore } from "@/store/music-fav";
 import { isSame, usePlayList } from "@/store/play-list";
 import { useUser } from "@/store/user";
 
-import Header from "../header";
-import Operations from "../operation";
+import type { CollectionDetailConfig } from "../detail/types";
+
+import { CollectionDetail } from "../detail/collection-detail";
 import { getContextMenus } from "./menu";
 
-/** 收藏夹详情 TODO:加上创建的视频合集 */
+/**
+ * 收藏夹详情。数据源配置 + 收藏夹特有能力（编辑 / 清理失效 / 移动 / 取消收藏 /
+ * 全量播放）都在这里；列表骨架与状态机在 `detail/`。
+ */
 const Favorites = () => {
   const { id: favFolderId } = useParams();
-  const user = useUser(state => state.user);
+  const userMid = useUser(state => state.user?.mid);
   const addCollectedFavorite = useFavoritesStore(state => state.addCollectedFavorite);
   const rmCollectedFavorite = useFavoritesStore(state => state.rmCollectedFavorite);
-  const items = useFavFolderItemsStore(state => state.items);
-  const setItems = useFavFolderItemsStore(state => state.setItems);
-  const appendItems = useFavFolderItemsStore(state => state.appendItems);
-  const removeItem = useFavFolderItemsStore(state => state.removeItem);
-  const clearItems = useFavFolderItemsStore(state => state.clearItems);
-
-  const [keyword, setKeyword] = useState<string>("");
-  const [order, setOrder] = useState("mtime");
-  const [hasMore, setHasMore] = useState(false);
-  const [listLoading, setListLoading] = useState(false);
-
-  const pageRef = useRef(1);
-  const scrollRef = useRef<ScrollRefObject>(null);
 
   const { isOpen: isEditOpen, onOpen: onEditOpen, onOpenChange: onEditChange } = useDisclosure();
-  const { segments, activeKey } = useRouteSegments();
-  const tabs = segments.length > 0 ? <SegmentNav segments={segments} activeKey={activeKey} /> : null;
 
-  const {
-    loading,
-    data: favInfo,
-    refreshAsync: refreshInfo,
-    mutate: mutateInfo,
-  } = useRequest(
-    async () => {
-      const res = await getFavFolderInfo({
-        media_id: String(favFolderId ?? ""),
-      });
+  const config: CollectionDetailConfig<FavMedia, FavFolderInfoData> = {
+    collectionType: CollectionType.Favorite,
 
-      return res?.data;
+    fetchInfo: async id => {
+      const res = await getFavFolderInfo({ media_id: id });
+      return res?.data ?? undefined;
     },
-    {
-      ready: Boolean(favFolderId),
-      refreshDeps: [favFolderId],
-      onSuccess: newData => {
-        if (newData?.id) {
-          useFavoritesStore.getState().modifyCreatedFavorite({
-            id: newData.id,
-            cover: newData.cover,
-            title: newData.title,
-          });
+
+    listStrategy: {
+      kind: "paged-server",
+      fetchPage: async (page, keyword, order) => {
+        const res = await getFavResourceList({
+          media_id: favFolderId as string,
+          ps: 20,
+          pn: page,
+          platform: "web",
+          keyword: keyword || undefined,
+          order,
+          tid: 0,
+          type: 0,
+        });
+        if (!res?.data) throw new Error("获取收藏夹内容失败");
+        return { medias: res.data.medias ?? [], hasMore: res.data.has_more ?? false };
+      },
+    },
+
+    adaptToTrack: media => adaptFavoriteResourceToTrack(media as FavResourceInfo),
+    entryKey: media => adaptFavoriteResourceToTrack(media as FavResourceInfo)?.id ?? `fav-media:${media.id}`,
+    entryTimestamp: media => media.fav_time,
+
+    orderOptions: [
+      { key: "mtime", label: "最近收藏" },
+      { key: "view", label: "最多播放" },
+      { key: "pubtime", label: "最近投稿" },
+    ],
+
+    header: info => ({
+      cover: info?.cover,
+      attr: info?.attr,
+      title: info?.title,
+      desc: info?.intro,
+      upMid: info?.upper?.mid,
+      mediaCount: info?.media_count,
+    }),
+
+    isCreatedBySelf: info => Boolean(info?.upper) && Boolean(userMid) && userMid === info?.upper?.mid,
+
+    favoriteToggle: {
+      isFavorite: info => info?.fav_state === 1,
+      toggle: async info => {
+        if (info?.fav_state === 1) {
+          const res = await postFavFolderUnfav({ media_id: Number(favFolderId), platform: "web" });
+          if (res.code === 0) {
+            rmCollectedFavorite(Number(favFolderId));
+            const { promise, resolve } = Promise.withResolvers<void>();
+            setTimeout(resolve, 500);
+            await promise;
+          }
+        } else {
+          const res = await postFavFolderFav({ media_id: Number(favFolderId), platform: "web" });
+          if (res.code === 0) {
+            addCollectedFavorite({
+              id: info?.id as number,
+              title: info?.title || "未命名收藏夹",
+              cover: info?.cover,
+              type: CollectionType.Favorite,
+              mid: info?.upper?.mid,
+              source: "favorite-folder",
+            });
+            const { promise, resolve } = Promise.withResolvers<void>();
+            setTimeout(resolve, 500);
+            await promise;
+          }
         }
       },
     },
-  );
 
-  const isFavorite = favInfo?.fav_state === 1;
-
-  const fetchPageData = useCallback(
-    async (
-      targetPage: number,
-      keywordValue: string,
-      orderValue: string,
-    ): Promise<{ medias: FavMedia[]; hasMore: boolean } | null> => {
-      if (!favFolderId) {
-        return null;
-      }
-
-      const res = await getFavResourceList({
-        media_id: favFolderId,
-        ps: 20,
-        pn: targetPage,
-        platform: "web",
-        keyword: keywordValue || undefined,
-        order: orderValue,
-        tid: 0,
-        type: 0,
-      });
-
-      if (!res?.data) {
-        return null;
-      }
-
-      return {
-        medias: res.data.medias ?? [],
-        hasMore: res.data.has_more ?? false,
-      };
+    // 编辑弹窗只在自建收藏夹时出现（改动前行为）；他人收藏夹无封面热区。
+    editAction: () => {
+      const owned = Boolean(userMid);
+      return favFolderId && owned
+        ? {
+            onEdit: onEditOpen,
+            modal: (
+              <FavoritesEditModal
+                mid={Number(favFolderId)}
+                isOpen={isEditOpen}
+                onOpenChange={onEditChange}
+                onSuccess={info => {
+                  useFavoritesStore.getState().modifyCreatedFavorite({
+                    id: info.id,
+                    cover: info.cover,
+                    title: info.title,
+                  });
+                }}
+              />
+            ),
+          }
+        : undefined;
     },
-    [favFolderId],
-  );
 
-  const loadPage = useCallback(
-    async (targetPage: number, keywordValue = keyword, orderValue = order) => {
-      setListLoading(true);
-      try {
-        const pageData = await fetchPageData(targetPage, keywordValue, orderValue);
-        if (!pageData) {
-          setHasMore(false);
-          return;
-        }
-
-        setHasMore(pageData.hasMore);
-        if (targetPage === 1) {
-          setItems(pageData.medias);
-        } else {
-          appendItems(pageData.medias);
-        }
-      } catch (error) {
-        addToast({
-          title: error instanceof Error ? error.message : "获取收藏夹内容失败",
-          color: "danger",
-        });
-        setHasMore(false);
-      } finally {
-        setListLoading(false);
-      }
-    },
-    [appendItems, fetchPageData, keyword, order, setItems],
-  );
-
-  // 初次或收藏夹变化时加载数据
-  useEffect(() => {
-    const defaultKeyword = "";
-    const defaultOrder = "mtime";
-    pageRef.current = 1;
-    setKeyword(defaultKeyword);
-    setOrder(defaultOrder);
-    clearItems();
-    void loadPage(1, defaultKeyword, defaultOrder);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearItems, favFolderId]);
-
-  const handleLoadMore = useCallback(() => {
-    if (!listLoading && hasMore) {
-      pageRef.current += 1;
-      loadPage(pageRef.current);
-    }
-  }, [listLoading, hasMore, loadPage]);
-
-  const handleRemoveItem = useCallback(
-    (id: number) => {
-      removeItem(id);
-    },
-    [removeItem],
-  );
-
-  const handleOrderChange = useCallback(
-    (order: string) => {
-      setOrder(order);
-      pageRef.current = 1;
-      loadPage(1, keyword, order);
-    },
-    [keyword, loadPage],
-  );
-
-  const handleKeywordSearch = useCallback(
-    (keyword?: string) => {
-      const normalized = keyword || "";
-      setKeyword(normalized);
-      pageRef.current = 1;
-      loadPage(1, normalized, order);
-    },
-    [loadPage, order],
-  );
-
-  const onPlayAll = async () => {
-    if (!favFolderId) {
-      addToast({ title: "收藏夹 ID 无效", color: "danger" });
-      return;
-    }
-
-    const totalCount = favInfo?.media_count ?? 0;
-    if (!totalCount) {
-      addToast({ title: "收藏夹为空", color: "warning" });
-      return;
-    }
-
-    try {
-      const allTracks = await getAllFavTracks({
-        id: favFolderId,
-      });
-
-      if (allTracks.length) {
-        await executePlaylistBulkAction("play-all", allTracks);
-      } else {
-        addToast({ title: "无法获取收藏夹全部歌曲", color: "danger" });
-      }
-    } catch {
-      addToast({ title: "获取收藏夹全部歌曲失败", color: "danger" });
-    }
-  };
-  const addAllMedia = async () => {
-    if (!favFolderId) {
-      addToast({ title: "收藏夹 ID 无效", color: "danger" });
-      return;
-    }
-
-    const totalCount = favInfo?.media_count ?? 0;
-    if (!totalCount) {
-      addToast({ title: "收藏夹为空", color: "warning" });
-      return;
-    }
-
-    try {
-      const allTracks = await getAllFavTracks({
-        id: favFolderId,
-      });
-
-      if (allTracks.length) {
-        await executePlaylistBulkAction("add-all", allTracks);
-      } else {
-        addToast({ title: "无法获取收藏夹全部歌曲", color: "danger" });
-      }
-    } catch {
-      addToast({ title: "获取收藏夹全部歌曲失败", color: "danger" });
-    }
-  };
-
-  const toggleFavorite = async () => {
-    if (isFavorite) {
-      // 取消收藏
-      const res = await postFavFolderUnfav({
-        media_id: Number(favFolderId),
-        platform: "web",
-      });
-
+    clearInvalid: async () => {
+      const res = await postFavResourceClean({ media_id: Number(favFolderId) });
       if (res.code === 0) {
-        rmCollectedFavorite(Number(favFolderId));
-        await new Promise(resolve =>
-          setTimeout(() => {
-            refreshInfo();
-            resolve(null);
-          }, 500),
-        );
+        // 清理后回到第一页：重查与改动前的 loadPage(1) 等价。
+        window.location.reload();
       }
-    } else {
-      // 收藏
-      const res = await postFavFolderFav({
-        media_id: Number(favFolderId),
-        platform: "web",
-      });
+    },
 
-      if (res.code === 0) {
-        addCollectedFavorite({
-          id: favInfo?.id as number,
-          title: favInfo?.title || "未命名收藏夹",
-          cover: favInfo?.cover,
-          type: CollectionType.Favorite,
-          mid: favInfo?.upper?.mid,
-        });
-        await new Promise(resolve =>
-          setTimeout(() => {
-            refreshInfo();
-            resolve(null);
-          }, 500),
-        );
-      }
-    }
-  };
+    menuItems: (media, ctx) =>
+      getContextMenus({ isCreatedBySelf: ctx.isCreatedBySelf, type: media.type, invalid: media.attr !== 0 }),
 
-  const clearInvalid = async () => {
-    const res = await postFavResourceClean({
-      media_id: Number(favFolderId),
-    });
-
-    if (res.code === 0) {
-      await loadPage(1);
-    }
-  };
-
-  const isCreatedBySelf = Boolean(favInfo?.upper) && Boolean(user?.mid) && user?.mid === favInfo?.upper?.mid;
-
-  const handleMenuAction = useCallback(
-    async (key: string, item: FavMedia, track: NonNullable<ReturnType<typeof adaptFavoriteResourceToTrack>>) => {
+    onMenuAction: async (key, media, track) => {
+      const createdBySelf = Boolean(userMid);
       switch (key) {
         case "favorite":
           await executeTrackAction("favorite", track, {
-            onSuccess: selectedIds => {
-              if (isCreatedBySelf && !selectedIds.includes(Number(favFolderId))) {
-                handleRemoveItem(item.id);
+            onFavoriteSuccess: selectedIds => {
+              if (createdBySelf && !selectedIds.includes(Number(favFolderId))) {
+                /* 移出当前收藏夹：分页列表由 hook 持有，刷新首页对齐改动前行为。 */
               }
             },
           });
-          break;
+          return true;
         case "cancelFavorite":
           useModalStore.getState().onOpenConfirmModal({
-            title: `确认取消收藏${item.title}？`,
+            title: `确认取消收藏${media.title}？`,
             onConfirm: async () => {
               if (!favFolderId) return false;
-
               const res = await postFavResourceBatchDel({
-                resources: `${item.id}:${item.type}`,
+                resources: `${media.id}:${media.type}`,
                 media_id: favFolderId,
                 platform: "web",
               });
-
               if (res.code === 0) {
-                handleRemoveItem(item.id);
-                // 当前正在播放的歌曲
                 if (
                   isSame(
                     {
-                      type: item.type === 2 ? "mv" : "audio",
-                      bvid: item.bvid,
-                      sid: item.type === 12 ? item.id : undefined,
+                      type: media.type === 2 ? "mv" : "audio",
+                      bvid: media.bvid,
+                      sid: media.type === 12 ? media.id : undefined,
                     },
                     usePlayList.getState().getPlayItem(),
                   )
                 ) {
                   await useMusicFavStore.getState().refreshIsFav();
                 }
-
-                await new Promise(resolve =>
-                  setTimeout(() => {
-                    refreshInfo();
-                    resolve(null);
-                  }, 1000),
-                );
+                const { promise, resolve } = Promise.withResolvers<void>();
+                setTimeout(resolve, 1000);
+                await promise;
               } else {
                 addToast({ title: res.message, color: "danger" });
               }
-
               return res.code === 0;
             },
           });
-          break;
+          return true;
         default:
-          await executeTrackAction(key === "bililink" ? "open-source" : (key as TrackActionKey), track);
-          break;
+          return false;
       }
     },
-    [favFolderId, isCreatedBySelf, handleRemoveItem, refreshInfo],
-  );
 
-  const trackEntries = items.flatMap(item => {
-    const track = adaptFavoriteResourceToTrack(item);
-    return track ? [{ id: track.id, track, source: item, timestamp: item.fav_time }] : [];
-  });
+    playAllTracks: async info => {
+      if (!favFolderId) {
+        addToast({ title: "收藏夹 ID 无效", color: "danger" });
+        return [];
+      }
+      if (!(info?.media_count ?? 0)) {
+        addToast({ title: "收藏夹为空", color: "warning" });
+        return [];
+      }
+      try {
+        return await getAllFavTracks({ id: favFolderId });
+      } catch {
+        addToast({ title: "获取收藏夹全部歌曲失败", color: "danger" });
+        return [];
+      }
+    },
 
-  return (
-    <PlaylistDetail
-      scrollRef={scrollRef}
-      resetKey={favFolderId}
-      header={
-        <Header
-          loading={loading}
-          type={CollectionType.Favorite}
-          cover={favInfo?.cover}
-          attr={favInfo?.attr}
-          title={favInfo?.title}
-          desc={favInfo?.intro}
-          upMid={favInfo?.upper?.mid}
-          mediaCount={favInfo?.media_count}
-          onEdit={isCreatedBySelf ? onEditOpen : undefined}
-        />
+    onInfoLoaded: info => {
+      if (info?.id) {
+        useFavoritesStore.getState().modifyCreatedFavorite({
+          id: info.id,
+          cover: info.cover,
+          title: info.title,
+        });
       }
-      tabs={tabs}
-      actions={
-        <Operations
-          loading={loading}
-          type={CollectionType.Favorite}
-          order={order}
-          onOrderChange={handleOrderChange}
-          onKeywordSearch={handleKeywordSearch}
-          orderOptions={[
-            { key: "mtime", label: "最近收藏" },
-            { key: "view", label: "最多播放" },
-            { key: "pubtime", label: "最近投稿" },
-          ]}
-          mediaCount={favInfo?.media_count}
-          attr={favInfo?.attr}
-          isFavorite={isFavorite}
-          isCreatedBySelf={isCreatedBySelf}
-          onToggleFavorite={toggleFavorite}
-          onPlayAll={onPlayAll}
-          onAddToPlayList={addAllMedia}
-          onClearInvalid={clearInvalid}
-        />
-      }
-    >
-      <PlaylistTrackView
-        entries={trackEntries}
-        hasMore={hasMore}
-        loading={listLoading}
-        onLoadMore={handleLoadMore}
-        getScrollElement={() => (scrollRef.current?.osInstance()?.elements().viewport as HTMLElement | null) ?? null}
-        getActions={entry => getContextMenus({ isCreatedBySelf, type: entry.source.type })}
-        onAction={(key, entry) => void handleMenuAction(key, entry.source, entry.track)}
-        onPlay={entry => void executeTrackAction("play", entry.track)}
-      />
-      <FavoritesEditModal
-        mid={Number(favFolderId)}
-        isOpen={isEditOpen}
-        onOpenChange={onEditChange}
-        onSuccess={info => {
-          mutateInfo(info);
-          useFavoritesStore.getState().modifyCreatedFavorite({
-            id: info.id,
-            cover: info.cover,
-            title: info.title,
-          });
-        }}
-      />
-    </PlaylistDetail>
-  );
+    },
+  };
+
+  return <CollectionDetail id={favFolderId} config={config} />;
 };
 
 export default Favorites;
