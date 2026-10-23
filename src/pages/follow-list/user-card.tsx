@@ -1,18 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router";
 
-import {
-  Avatar,
-  Button,
-  Card,
-  CardBody,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownTrigger,
-  addToast,
-} from "@heroui/react";
-import { RiGroupLine, RiMore2Fill, RiUserUnfollowLine, RiVipCrownFill, RiVipFill } from "@remixicon/react";
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, addToast } from "@heroui/react";
+import { RiGroupLine, RiMore2Fill, RiStarFill, RiUserUnfollowLine, RiVipCrownFill, RiVipFill } from "@remixicon/react";
 
 import type { RelationListItem } from "@/service/relation-followings";
 import type { RelationTagUser } from "@/service/relation-tag";
@@ -20,9 +10,11 @@ import type { RelationTagUser } from "@/service/relation-tag";
 import { formatUrlProtocol } from "@/common/utils/url";
 import { UserRelationAction, postRelationModify } from "@/service/relation-modify";
 import { useModalStore } from "@/store/modal";
+import { Artwork } from "@/ui/primitives/artwork";
 
 interface Props {
   u: RelationListItem | RelationTagUser;
+  groupLabel?: string;
   refresh: () => void;
   onSetGroup: (u: RelationListItem | RelationTagUser) => void;
 }
@@ -34,7 +26,13 @@ const getAvatarUrl = (face?: string) => {
   return url.includes("@") || !url.includes("/bfs/") ? url : `${url}@160w_160h_1c_1s.webp`;
 };
 
-const UserCard = ({ u, refresh, onSetGroup }: Props) => {
+/**
+ * 关注卡片：横向紧凑布局，头像 + 名字 + 签名 + 分组标签。
+ *
+ * 分组页和关注页共用；卡片整块进主页，右上角「更多」是独立按钮，
+ * hover / 键盘 focus 时出现，触屏上保持可见。
+ */
+const UserCard = ({ u, groupLabel, refresh, onSetGroup }: Props) => {
   const navigate = useNavigate();
   const onOpenConfirmModal = useModalStore(s => s.onOpenConfirmModal);
 
@@ -70,73 +68,61 @@ const UserCard = ({ u, refresh, onSetGroup }: Props) => {
     });
   };
 
-  const handleSetGroup = () => {
-    onSetGroup(u);
-  };
-
   const officialType = u.official_verify?.type;
+  const openProfile = () => navigate(`/user/${u.mid}`);
 
   return (
-    <Card
-      key={u.mid}
-      radius="md"
-      as="div"
-      isHoverable
-      isPressable
-      onPress={() => navigate(`/user/${u.mid}`)}
-      className="social4188-person-card group relative h-full w-full overflow-hidden"
-    >
-      <CardBody className="flex items-center space-y-2 overflow-hidden p-4">
-        <div className="relative h-32 w-32 flex-none">
-          <Avatar className="text-large h-32 w-32" src={getAvatarUrl(u.face)} name={u.uname} />
-          {officialType === 0 && (
-            <div
-              aria-label="个人认证"
-              title="个人认证"
-              className="bg-warning lili-theme-4188:ring-[var(--lili-4188-surface)] absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full text-black ring-2 ring-[rgb(var(--lili-color-surface-low))]"
-            >
-              <RiVipFill size={14} />
-            </div>
+    <article className="social4188-follow-card">
+      <button
+        type="button"
+        className="social4188-follow-main"
+        aria-label={`打开 ${u.uname} 的主页`}
+        onClick={openProfile}
+      >
+        <span className="social4188-follow-avatar-wrap">
+          <Artwork
+            src={getAvatarUrl(u.face)}
+            artKey={String(u.mid)}
+            alt=""
+            radius="round"
+            gradient="avatar"
+            className="social4188-follow-avatar"
+          />
+          {u.special === 1 && (
+            <span className="social4188-follow-special" aria-label="特别关注" title="特别关注">
+              <RiStarFill size={10} />
+            </span>
           )}
-          {officialType === 1 && (
-            <div
-              aria-label="机构认证"
-              title="机构认证"
-              className="bg-primary lili-theme-4188:ring-[var(--lili-4188-surface)] absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full text-white ring-2 ring-[rgb(var(--lili-color-surface-low))]"
-            >
-              <RiVipCrownFill size={14} />
-            </div>
-          )}
-        </div>
-        <div className="flex w-full flex-col items-center space-y-1">
-          <span className="max-w-full min-w-0 truncate text-lg">{u.uname}</span>
-          <span className="text-foreground-500 line-clamp-2 w-full text-center text-sm">{u.sign}</span>
-        </div>
-      </CardBody>
+        </span>
 
-      {/* 常驻的更多操作入口：不依赖 hover，键盘 focus 也可达。 */}
-      <div className="absolute top-2 right-2 z-20">
-        <Dropdown
-          placement="bottom-end"
-          classNames={{
-            content: "min-w-36",
-          }}
-        >
+        <span className="social4188-follow-copy">
+          <span className="social4188-follow-name">
+            <strong>{u.uname}</strong>
+            {officialType === 0 && (
+              <span className="social4188-follow-verify" aria-label="个人认证" title="个人认证">
+                <RiVipFill size={11} />
+              </span>
+            )}
+            {officialType === 1 && (
+              <span className="social4188-follow-verify is-org" aria-label="机构认证" title="机构认证">
+                <RiVipCrownFill size={11} />
+              </span>
+            )}
+          </span>
+          <span className="social4188-follow-sign">{u.sign || "这个人很神秘，什么都没写"}</span>
+          <span className="social4188-follow-meta">{groupLabel ?? "已关注"}</span>
+        </span>
+      </button>
+
+      <span className="social4188-follow-more">
+        <Dropdown placement="bottom-end">
           <DropdownTrigger>
-            <Button
-              size="sm"
-              variant="light"
-              isIconOnly
-              radius="md"
-              aria-label={`更多操作：${u.uname}`}
-              className="bg-default-100/80 text-default-600 data-[hover=true]:bg-default-200/90 opacity-0 backdrop-blur-md transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
-              onPress={e => e.continuePropagation()}
-            >
+            <button type="button" className="social4188-follow-more-btn" aria-label={`更多操作：${u.uname}`}>
               <RiMore2Fill size={16} />
-            </Button>
+            </button>
           </DropdownTrigger>
           <DropdownMenu aria-label={`更多操作：${u.uname}`} variant="flat">
-            <DropdownItem key="set-group" startContent={<RiGroupLine size={18} />} onPress={handleSetGroup}>
+            <DropdownItem key="set-group" startContent={<RiGroupLine size={18} />} onPress={() => onSetGroup(u)}>
               设置分组
             </DropdownItem>
             <DropdownItem
@@ -150,8 +136,8 @@ const UserCard = ({ u, refresh, onSetGroup }: Props) => {
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>
-      </div>
-    </Card>
+      </span>
+    </article>
   );
 };
 

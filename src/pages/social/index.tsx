@@ -59,12 +59,8 @@ const SocialPage = () => {
 
   return (
     <main className="social4188-page social4188-page--fixed">
-      <header className="social4188-head social4188-head--tabs">
-        <div>
-          <span>内容来源</span>
-          <h1>关注的创作者</h1>
-          <p>关注与动态保留在音乐主流程之外，用于发现新内容。</p>
-        </div>
+      <h1 className="sr-only">关注与动态</h1>
+      <div className="social4188-toolbar">
         <nav className="social4188-tabs" aria-label="关注内容类型">
           {SOCIAL_TABS.map(tab => {
             const isActive = selectedTab === tab.key;
@@ -89,7 +85,7 @@ const SocialPage = () => {
             );
           })}
         </nav>
-      </header>
+      </div>
       <div
         className="social4188-body"
         role="tabpanel"

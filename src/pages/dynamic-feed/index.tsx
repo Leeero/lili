@@ -135,11 +135,11 @@ const DynamicFeedPage = () => {
   }, [handleScroll]);
 
   return (
-    <div className="social4188-feed flex h-full w-full">
+    <div className="social4188-feed flex h-full w-full flex-col">
       <AuthorList selectedAuthorMid={selectedAuthorMid} onSelect={handleSelectAuthor} />
 
       <div className="flex min-w-0 flex-1">
-        <ScrollContainer ref={scrollRef} className="h-full w-full px-4">
+        <ScrollContainer ref={scrollRef} className="social4188-feed-scroll h-full w-full px-4">
           <div
             className="relative w-full px-4 py-4"
             style={{
@@ -166,23 +166,25 @@ const DynamicFeedPage = () => {
 
           <div className="flex w-full justify-center py-4">
             {isLoading && (
-              <div className="text-default-500 flex items-center gap-2">
+              <div className="social4188-feed-state">
                 <Spinner size="sm" />
-                <span>Loading...</span>
+                <span>加载中…</span>
               </div>
             )}
             {!isLoading && error && (
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-danger">{error}</p>
-                <Button size="sm" onPress={() => fetchData(offset, selectedAuthorMid, requestIdRef.current)}>
-                  Retry
+              <div className="social4188-feed-state is-error">
+                <p>{error}</p>
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={() => fetchData(offset, selectedAuthorMid, requestIdRef.current)}
+                >
+                  重试
                 </Button>
               </div>
             )}
-            {!isLoading && !hasMore && items.length > 0 && <p className="text-default-400 text-sm">No more dynamics</p>}
-            {!isLoading && !hasMore && items.length === 0 && !error && (
-              <p className="text-default-400 text-sm">Empty</p>
-            )}
+            {!isLoading && !hasMore && items.length > 0 && <p className="social4188-feed-end">已显示全部动态</p>}
+            {!isLoading && !hasMore && items.length === 0 && !error && <p className="social4188-feed-end">暂无动态</p>}
           </div>
         </ScrollContainer>
       </div>

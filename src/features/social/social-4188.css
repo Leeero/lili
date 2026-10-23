@@ -24,11 +24,8 @@
   margin-bottom: 24px;
 }
 
-.social4188-head--tabs {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
+.social4188-toolbar {
+  margin-bottom: 24px;
 }
 
 .social4188-head > span,
@@ -56,15 +53,17 @@
   font-size: 14px;
 }
 
-/* 下划线 tab（QQ 音乐式）：与 `SegmentedControl variant="underline"` 同一视觉语言。
-   页面内分类导航从「反色药丸」迁到「弱分隔线 + 强调色下划线」。 */
+/* 下划线 tab（QQ 音乐式）：与 `SegmentedControl variant="underline"` 同一视觉语言，
+   页面内分类导航从「反色药丸」迁到「弱分隔线 + 强调色下划线」。
+   overflow-y 必须显式裁剪：`overflow-x: auto` 会把 overflow-y 也带成 auto，
+   下划线 tab 的 -1px 边距重叠随之触发纵向滚动条。 */
 .social4188-tabs {
   display: flex;
   width: max-content;
   max-width: 100%;
   gap: 8px;
   border-bottom: 1px solid var(--lili-4188-border);
-  overflow-x: auto;
+  overflow: auto hidden;
 }
 
 .social4188-tabs button,
@@ -193,32 +192,6 @@
   overflow: hidden;
 }
 
-.social4188-follow > div:first-child,
-.social4188-feed > div:first-child {
-  border: 1px solid var(--lili-4188-border);
-  border-radius: var(--lili-4188-radius-md);
-  background: var(--lili-4188-surface);
-}
-
-/* 关注列表侧栏在窄窗口下收窄，给创作者网格让位。 */
-.social4188-follow-aside {
-  flex-shrink: 0;
-}
-
-.social4188-person-card {
-  border-color: var(--lili-4188-border) !important;
-  border-radius: var(--lili-4188-radius-md) !important;
-  background: var(--lili-4188-surface) !important;
-  box-shadow: none !important;
-
-  /* hover 动效收敛：仅轻微提亮，不做位移/阴影，动效预算留给操作菜单。 */
-  transition: background-color 200ms ease;
-
-  &:hover {
-    background: var(--lili-4188-surface-elevated) !important;
-  }
-}
-
 .social4188-profile {
   width: 100%;
 
@@ -269,16 +242,6 @@
   .social4188-creator-grid {
     grid-template-columns: 1fr 1fr;
   }
-
-  .social4188-head--tabs {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  /* 窄窗口下分组栏收窄为图标宽度级别，避免挤占创作者网格。 */
-  .social4188-follow .social4188-follow-aside {
-    width: 148px;
-  }
 }
 
 @media (width<=640px) {
@@ -291,13 +254,542 @@
   }
 
   /* 极窄窗口下隐藏分组栏（与既有 feed 行为一致），焦点回到网格本身。 */
-  .social4188-follow > div:first-child,
-  .social4188-feed > div:first-child {
-    display: none;
-  }
-
   .social4188-creator-info {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* ---------- 关注与动态：创作者 ---------- */
+.social4188-follow {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.social4188-follow-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 12px;
+  flex-wrap: wrap;
+}
+
+.social4188-group-row {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+}
+
+.social4188-group-bar {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.social4188-group-chip {
+  display: inline-flex;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.social4188-group-chip:hover {
+  color: var(--lili-4188-text-primary);
+}
+
+.social4188-group-chip.is-active,
+.social4188-group-item.is-active .social4188-group-chip {
+  background: var(--lili-4188-action-soft);
+  color: var(--lili-4188-action);
+}
+
+.social4188-group-item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  border-radius: var(--lili-4188-radius-pill);
+  transition: background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.social4188-group-item:hover {
+  background: var(--lili-4188-surface-hover);
+}
+
+.social4188-group-item.is-active {
+  background: var(--lili-4188-action-soft);
+}
+
+.social4188-group-count {
+  display: inline-flex;
+  min-width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: var(--lili-4188-radius-pill);
+  background: var(--lili-4188-surface-elevated);
+  color: var(--lili-4188-text-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.social4188-group-more {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.social4188-group-item:hover .social4188-group-more,
+.social4188-group-item:focus-within .social4188-group-more,
+.social4188-group-item.is-active .social4188-group-more {
+  opacity: 1;
+}
+
+.social4188-group-more:hover {
+  color: var(--lili-4188-text-primary);
+}
+
+.social4188-group-add {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  place-items: center;
+  border: 1px dashed var(--lili-4188-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  cursor: pointer;
+}
+
+.social4188-group-add:hover {
+  border-color: var(--lili-4188-action);
+  color: var(--lili-4188-action);
+}
+
+.social4188-group-chip:focus-visible,
+.social4188-group-more:focus-visible,
+.social4188-group-add:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+.social4188-follow-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.social4188-follow-search {
+  width: 230px;
+}
+
+.social4188-follow-scroll {
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+}
+
+.social4188-follow-content {
+  min-height: 100%;
+  padding: 0 0 28px;
+}
+
+.social4188-follow-card {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-card);
+  background: var(--lili-4188-surface);
+  transition: background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.social4188-follow-main {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 30px 12px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.social4188-follow-card:hover {
+  background: var(--lili-4188-surface-hover);
+}
+
+.social4188-follow-main:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: -2px;
+  border-radius: var(--lili-4188-radius-card);
+}
+
+.social4188-follow-avatar-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+
+.social4188-follow-avatar {
+  width: 56px;
+  height: 56px;
+}
+
+.social4188-follow-special {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--lili-4188-warning);
+  color: var(--lili-4188-canvas);
+  box-shadow: 0 0 0 2px var(--lili-4188-surface);
+}
+
+.social4188-follow-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.social4188-follow-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.social4188-follow-name strong {
+  overflow: hidden;
+  color: var(--lili-4188-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.social4188-follow-verify {
+  display: grid;
+  width: 14px;
+  height: 14px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--lili-4188-action);
+  color: var(--lili-4188-canvas);
+}
+
+.social4188-follow-verify.is-org {
+  background: var(--lili-4188-info);
+}
+
+.social4188-follow-sign {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--lili-4188-text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.social4188-follow-meta {
+  overflow: hidden;
+  color: var(--lili-4188-text-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.social4188-follow-more {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.social4188-follow-card:hover .social4188-follow-more,
+.social4188-follow-card:focus-within .social4188-follow-more {
+  opacity: 1;
+}
+
+.social4188-follow-more-btn {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lili-4188-text-muted);
+  cursor: pointer;
+}
+
+.social4188-follow-more-btn:hover {
+  background: var(--lili-4188-surface-elevated);
+  color: var(--lili-4188-text-primary);
+}
+
+.social4188-follow-more-btn:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+.social4188-follow-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  padding: 0 0 28px;
+}
+
+.social4188-follow-skeleton-card {
+  display: block;
+  height: 104px;
+  border-radius: var(--lili-4188-radius-card);
+  background: var(--lili-4188-surface-hover);
+  animation: social4188-follow-pulse 1.4s ease-in-out infinite;
+}
+
+.social4188-follow-more-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 0 0;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+}
+
+.social4188-follow-more-error button {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.social4188-follow-more-error button:hover {
+  background: var(--lili-4188-surface-hover);
+  color: var(--lili-4188-text-primary);
+}
+
+.social4188-follow-loading {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+@keyframes social4188-follow-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .social4188-follow-skeleton-card {
+    animation: none;
+  }
+}
+
+@media (width<=980px) {
+  .social4188-follow-search {
+    width: 200px;
+  }
+}
+
+@media (width<=640px) {
+  .social4188-follow-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .social4188-group-row {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .social4188-follow-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .social4188-follow-search {
+    width: 100%;
+  }
+
+  .social4188-follow-avatar-wrap,
+  .social4188-follow-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .social4188-follow-main {
+    padding: 10px 28px 10px 12px;
+  }
+}
+
+/* ---------- 关注与动态：动态作者条 ---------- */
+.social4188-author-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.social4188-author-chip {
+  display: inline-flex;
+  height: 34px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--lili-4188-border);
+  border-radius: var(--lili-4188-radius-pill);
+  background: transparent;
+  color: var(--lili-4188-text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard),
+    border-color var(--lili-4188-duration-fast) var(--lili-4188-ease-standard);
+}
+
+.social4188-author-chip:hover {
+  color: var(--lili-4188-text-primary);
+}
+
+.social4188-author-chip.is-active {
+  border-color: transparent;
+  background: var(--lili-4188-action-soft);
+  color: var(--lili-4188-action);
+}
+
+.social4188-author-chip:focus-visible {
+  outline: 2px solid var(--lili-4188-focus);
+  outline-offset: 2px;
+}
+
+.social4188-author-all {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--lili-4188-surface-elevated);
+  color: var(--lili-4188-text-muted);
+}
+
+.social4188-author-chip.is-active .social4188-author-all {
+  background: var(--lili-4188-action);
+  color: var(--lili-4188-canvas);
+}
+
+.social4188-author-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.social4188-author-status {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.social4188-author-retry {
+  flex: none;
+  color: var(--lili-4188-action);
+}
+
+.social4188-feed-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 0;
+  color: var(--lili-4188-text-muted);
+  font-size: 12px;
+}
+
+.social4188-feed-state.is-error {
+  flex-direction: column;
+}
+
+.social4188-feed-state.is-error p {
+  margin: 0;
+  color: var(--lili-4188-error);
+}
+
+.social4188-feed-end {
+  margin: 0;
+  padding: 16px 0;
+  color: var(--lili-4188-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.social4188-feed-scroll {
+  min-height: 0;
 }
