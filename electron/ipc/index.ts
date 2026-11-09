@@ -1,6 +1,7 @@
 import type { IpcHandlerProps } from "./types";
 
 import { configureTrustedIpc } from "../security/ipc";
+import { registerPowerEvents } from "../system/power-events";
 import { registerAppHandlers } from "./app";
 import { registerCookieIpcHandlers } from "./cookie";
 import { registerDialogHandlers } from "./dialog";
@@ -26,4 +27,5 @@ export function registerIpcHandlers(props: IpcHandlerProps) {
   registerLyricsHandlers();
   registerLocalMusicHandlers();
   registerPlayerStatusIpc();
+  registerPowerEvents(props);
 }
