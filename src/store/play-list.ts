@@ -102,6 +102,11 @@ export interface PlayItem {
 
 interface Action {
   togglePlay: () => void;
+  /**
+   * 只暂停、不切换：已暂停时为 no-op。
+   * 供「自动暂停」（锁屏 / 休眠 / 耳机断开）使用 —— 用 togglePlay 会在已暂停时反而开始播放。
+   */
+  pause: () => void;
   toggleMute: () => void;
   setVolume: (volume: number) => void; // 0-1
   togglePlayMode: () => void;
@@ -532,6 +537,18 @@ export const usePlayList = create<State & Action>()(
           if (audio) {
             audio.currentTime = s;
           }
+        },
+        pause: () => {
+          if (audio.paused) {
+            return;
+          }
+
+          audio.pause();
+
+          // audio.onpause 会同步 isPlaying，这里再显式落一次，保证未执行 init 时状态也一致
+          set(state => {
+            state.isPlaying = false;
+          });
         },
         togglePlay: async () => {
           if (!get().list?.length) {
