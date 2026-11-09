@@ -27,15 +27,39 @@
 
 ## ✨ 特色功能
 
-- 🎼 以音乐播放为核心，支持发现音乐、播放队列、收藏夹、稍后播放和历史记录
+- 🎼 以音乐播放为核心，支持发现音乐、音乐榜单、播放队列、收藏夹与观看历史
 - 📚 统一音乐库集中呈现用户创建和收藏的歌单，保留原有 Bilibili 账户数据能力
 - 💿 支持扫描和播放本地音乐，本地内容与在线内容可进入同一个播放队列
 - 🎧 优先获取可用的高品质音频流，包括无损 Flac、192K 和 Hi-Res
 - 🔥 支持下载视频或提取音频，并提供收藏夹内容批量下载和任务管理
 - 👥 支持关注的创作者、最新动态和创作者内容浏览，社交能力收纳在音乐主流程之外
 - 🧩 提供浅色、深色主题，以及字体、主色、圆角和播放器显示选项
-- 🍃 支持全屏播放器、歌词、频谱、播放列表抽屉与 mini 播放器
-- 💿 支持系统托盘、最小化隐藏、全局快捷键和自动更新
+- 🍃 支持全屏播放器、歌词、播放列表与 mini 播放器
+- ⏸️ 锁屏、休眠或耳机断开时自动暂停，回到电脑前不会突然出声
+- 🖥️ 支持系统托盘、最小化隐藏、全局快捷键和自动更新
+
+## 🖼️ 界面预览
+
+<table>
+  <tbody>
+    <tr>
+      <td width="50%">
+        <img src="./screenshots/library.png" alt="我的音乐：按归属分段展示我创建的收藏夹" />
+      </td>
+      <td width="50%">
+        <img src="./screenshots/now-playing.png" alt="正在播放：封面、歌词与分 P 切换" />
+      </td>
+    </tr>
+    <tr>
+      <td width="50%">
+        <img src="./screenshots/settings-playback.png" alt="设置 · 播放：音质偏好与自动暂停" />
+      </td>
+      <td width="50%" align="center" valign="middle">
+        <img src="./screenshots/mini-player.png" alt="迷你播放器" width="360" />
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 ## 下载和使用
 
@@ -258,6 +282,31 @@ lili 换了打包身份（`appId` 由 `com.biu.wood3n` 改为 `com.leeero.lili`�
 
   新目录把其中的 `Biu` 换成 `lili` 即可。
 
+## 🛠 本地开发
+
+环境要求：
+
+- **Node.js 22.17.1** —— 版本锁在 `.nvmrc` 与 `package.json` 的 `engines`
+- **pnpm 10.24.0** —— 见 `packageManager` 字段，可用 `corepack enable` 自动对齐
+
+```bash
+pnpm install   # 安装依赖（postinstall 会下载 Electron 二进制）
+pnpm dev       # 开发模式：Rsbuild 起在 5678 端口，并自动拉起 Electron 窗口
+pnpm build     # 构建生产产物
+pnpm exec vitest run   # 单次运行全部测试（pnpm test 是 watch 模式）
+```
+
+- `pnpm dev` 启动的是**桌面应用**，不会自动开浏览器：Electron 由 `plugins/electron-dev.ts` 拉起，改主进程代码会自动重建并重启窗口。
+- 只想在浏览器里调界面时，访问 `http://localhost:5678/#/`。路由是 **HashRouter**，路径必须带 `#`；写成 `http://localhost:5678/settings` 会因为相对资源路径 404 而白屏。
+- 浏览器模式下直接请求 B 站接口会被 **CORS 拦截**（控制台 `Network Error`），这是预期现象：请求头改写只存在于 Electron 主进程的 `electron/network/interceptor.ts`。要看真实数据请用 `pnpm dev` 打开的窗口。
+- 本机 Node 版本与 `engines` 不一致时，安装会被 `.npmrc` 里的 `engine-strict=true` 直接拒绝，临时绕过：
+
+  ```bash
+  pnpm install --config.engine-strict=false
+  ```
+
+- 风格与静态检查：ESLint 配置在 `eslint.config.mjs`（`pnpm exec eslint <file>`），样式用 Stylelint（`stylelint.config.mjs`）。改 UI 时请注意 `pnpm exec tsc --noEmit` 存在库层面的基线报错，只能看「改动文件是否新增报错」。
+
 ## 📄 许可证与上游归属
 
 - lili 是基于 [wood3n/biu](https://github.com/wood3n/biu) 二次开发的**非官方版本**，不是哔哩哔哩官方项目。
@@ -268,7 +317,7 @@ lili 换了打包身份（`appId` 由 `com.biu.wood3n` 改为 `com.leeero.lili`�
   Required Notice: Copyright (c) 2022–2025 wood3n
   ```
 
-  该行在本仓库的 [`LICENSE`](LICENSE) 与 [`NOTICE`](NOTICE) 中均逐字保留，应用内「设置 → 高级与关于 → 关于 lili」也可见。
+  该行在本仓库的 [`LICENSE`](LICENSE) 与 [`NOTICE`](NOTICE) 中均逐字保留，应用内「设置 → 关于 → 关于 lili」也可见。
 - 上游代码的著作权归 wood3n 所有；本仓库未做历史重写，上游提交记录完整保留，用作归属证据链。
 - 改名、换图标、更换打包身份都不改变上述署名与许可要求。
 
