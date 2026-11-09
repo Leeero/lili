@@ -68,6 +68,28 @@ describe("settings store", () => {
     );
   });
 
+  test("auto-pause defaults match the approved product decision", () => {
+    expect(defaultAppSettings.autoPauseOnLock).toBe(true);
+    expect(defaultAppSettings.autoPauseOnAudioDeviceLost).toBe(true);
+    expect(defaultAppSettings.autoPauseResumeOnUnlock).toBe(false);
+  });
+
+  test("auto-pause switches are part of the persisted payload", async () => {
+    const { electron, useSettings } = await loadSettingsStore(defaultAppSettings);
+    useSettings.getState().update({ autoPauseOnLock: false, autoPauseResumeOnUnlock: true });
+    await vi.waitFor(() => expect(electron.setStore).toHaveBeenCalled());
+    expect(electron.setStore).toHaveBeenLastCalledWith(
+      StoreNameMap.AppSettings,
+      expect.objectContaining({
+        appSettings: expect.objectContaining({
+          autoPauseOnLock: false,
+          autoPauseOnAudioDeviceLost: true,
+          autoPauseResumeOnUnlock: true,
+        }),
+      }),
+    );
+  });
+
   test("reset restores and persists every default setting", async () => {
     const { electron, useSettings } = await loadSettingsStore({
       ...defaultAppSettings,
