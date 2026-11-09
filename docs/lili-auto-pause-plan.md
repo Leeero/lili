@@ -407,14 +407,17 @@ autoPauseResumeOnUnlock: boolean;    // 默认 false
 | S6 | 手工回归（macOS 全量 + 三平台冒烟） | 0.5 |
 | **合计** | | **≈ 3.5 人日** |
 
-提交切分（每个可独立回滚）：
+实际提交序列（每个可独立回滚，已推送至 `refactor/prototype-a-c`）：
 
 1. `feat(settings): 新增自动暂停三项设置`（类型/默认值/store/UI）
 2. `feat(electron): 转发系统锁屏与休眠事件到渲染端`
-3. `feat(player): 新增幂等 pause 动作与系统暂停状态`
-4. `feat(player): 锁屏与休眠唤醒自动暂停`
-5. `feat(player): 音频输出设备断开自动暂停`
+3. `feat(player): 新增幂等 pause 动作与自动暂停判定`（含 policy 纯函数，store 依赖其类型）
+4. `feat(player): 音频输出设备断开自动暂停`
+5. `feat(player): 锁屏与休眠唤醒自动暂停`（编排器 + 淡出 + 装配）
 6. `test: 自动暂停策略与设备判定单测`
+7. `docs: 自动暂停需求清单与技术方案`
+
+> 与初版计划的差异：设备监听提到编排器之前。编排器 `index.ts` 直接 `import` 设备监听，若按原顺序提交，第 4 个提交会出现引用不存在的模块。
 
 ---
 
