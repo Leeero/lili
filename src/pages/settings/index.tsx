@@ -17,7 +17,7 @@ import ScrollContainer from "@/components/scroll-container";
 import { useAppUpdateStore } from "@/store/app-update";
 import { useSettings } from "@/store/settings";
 
-import MenuSettings from "./menu-settings";
+import LibrarySettings from "./library-settings";
 import ProxySettings from "./proxy-settings";
 import ShortcutSettingsPage from "./shortcut-settings";
 import { SystemSettingsTab } from "./system-settings";
@@ -33,7 +33,7 @@ const useSystemSettingsForm = () => {
     closeWindowOption,
     autoStart,
     audioQuality,
-    hiddenMenuKeys,
+    hiddenLibraryKeys,
     displayMode,
     ffmpegPath,
     themeMode,
@@ -41,6 +41,9 @@ const useSystemSettingsForm = () => {
     showSearchHistory,
     proxySettings,
     reportPlayHistory,
+    autoPauseOnLock,
+    autoPauseOnAudioDeviceLost,
+    autoPauseResumeOnUnlock,
   } = useSettings(
     useShallow(s => ({
       fontFamily: s.fontFamily,
@@ -51,7 +54,7 @@ const useSystemSettingsForm = () => {
       closeWindowOption: s.closeWindowOption,
       autoStart: s.autoStart,
       audioQuality: s.audioQuality,
-      hiddenMenuKeys: s.hiddenMenuKeys,
+      hiddenLibraryKeys: s.hiddenLibraryKeys,
       displayMode: s.displayMode,
       ffmpegPath: s.ffmpegPath,
       themeMode: s.themeMode,
@@ -59,6 +62,9 @@ const useSystemSettingsForm = () => {
       showSearchHistory: s.showSearchHistory,
       proxySettings: s.proxySettings,
       reportPlayHistory: s.reportPlayHistory,
+      autoPauseOnLock: s.autoPauseOnLock,
+      autoPauseOnAudioDeviceLost: s.autoPauseOnAudioDeviceLost,
+      autoPauseResumeOnUnlock: s.autoPauseResumeOnUnlock,
     })),
   );
   const updateSettings = useSettings(s => s.update);
@@ -79,7 +85,7 @@ const useSystemSettingsForm = () => {
       closeWindowOption,
       autoStart,
       audioQuality,
-      hiddenMenuKeys,
+      hiddenLibraryKeys,
       displayMode,
       ffmpegPath,
       themeMode,
@@ -93,6 +99,9 @@ const useSystemSettingsForm = () => {
         password: "",
       },
       reportPlayHistory,
+      autoPauseOnLock,
+      autoPauseOnAudioDeviceLost,
+      autoPauseResumeOnUnlock,
     },
   });
 
@@ -122,6 +131,9 @@ const useSystemSettingsForm = () => {
     });
   }, [
     audioQuality,
+    autoPauseOnAudioDeviceLost,
+    autoPauseOnLock,
+    autoPauseResumeOnUnlock,
     autoStart,
     backgroundColor,
     borderRadius,
@@ -130,7 +142,7 @@ const useSystemSettingsForm = () => {
     downloadPath,
     ffmpegPath,
     fontFamily,
-    hiddenMenuKeys,
+    hiddenLibraryKeys,
     pageTransition,
     primaryColor,
     proxySettings,
@@ -178,7 +190,7 @@ const SettingsDetails = ({ selectedTab }: { selectedTab: SettingsTab }) => {
             <CardBody className="gap-8 p-6">
               <SystemSettingsTab {...system} section="general" />
               <div className="border-divider border-t pt-6">
-                <MenuSettings control={system.control} />
+                <LibrarySettings control={system.control} />
               </div>
             </CardBody>
           </Card>
@@ -236,11 +248,7 @@ const SettingsDetails = ({ selectedTab }: { selectedTab: SettingsTab }) => {
   return (
     <ScrollContainer enableBackToTop className="h-full w-full">
       <div className="settings4188-page">
-        <div className="settings4188-head">
-          <span>应用偏好</span>
-          <h1>设置</h1>
-          <p>管理 lili 的界面、播放与本地应用偏好</p>
-        </div>
+        <h1 className="sr-only">设置</h1>
         <div className="flex w-full items-start max-md:flex-col">
           <nav
             aria-label="设置分类"

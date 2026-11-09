@@ -14,6 +14,7 @@ import { installWebRequestInterceptors } from "./network/interceptor";
 import { isTrustedAppNavigation } from "./security/validation";
 import { registerAllShortcuts, unregisterAllShortcuts } from "./shortcut";
 import { appSettingsStore } from "./store";
+import { disposePowerEvents } from "./system/power-events";
 import { autoUpdater, setupAutoUpdater, stopCheckForUpdates } from "./updater";
 import { getWindowIcon } from "./utils";
 import { setupWindowsThumbar } from "./windows/thumbar";
@@ -206,6 +207,8 @@ if (!gotTheLock) {
 
     stopCheckForUpdates();
     autoUpdater.removeAllListeners();
+
+    disposePowerEvents();
 
     unregisterAllShortcuts();
 

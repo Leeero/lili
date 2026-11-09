@@ -6,6 +6,7 @@ import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import log from "electron-log/renderer";
 import moment from "moment";
 
+import { startAutoPauseBridge } from "./common/utils/auto-pause";
 import { getCookitFromBSite } from "./common/utils/cookie";
 import { isPlayerCommand, runPlayerCommand } from "./common/utils/player-command";
 import { startPlayerStatusBridge } from "./common/utils/player-status-bridge";
@@ -65,6 +66,11 @@ export function App() {
   // 把播放状态快照推送给主进程，驱动菜单栏/托盘菜单与任务栏按钮
   useEffect(() => {
     return startPlayerStatusBridge();
+  }, []);
+
+  // 锁屏 / 休眠 / 耳机断开时自动暂停
+  useEffect(() => {
+    return startAutoPauseBridge();
   }, []);
 
   // 监听应用内快捷键

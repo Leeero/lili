@@ -15,6 +15,20 @@ declare global {
     | "favorite";
 
   /**
+   * 主进程下发给渲染进程的系统电源事件（锁屏/解锁/休眠/唤醒）。
+   * 「自动暂停」据此决定是否暂停播放；策略与开关都在渲染端，主进程只负责转发事实。
+   */
+  type SystemPowerEventType = "lock-screen" | "unlock-screen" | "suspend" | "resume";
+
+  interface SystemPowerEvent {
+    type: SystemPowerEventType;
+    /** 事件发生时间戳（ms），用于宽限期与「最近一次系统暂停」判定 */
+    at: number;
+    /** 仅 resume 携带：休眠前是否正在播放（主进程侧快照） */
+    wasPlaying?: boolean;
+  }
+
+  /**
    * 渲染进程推送给主进程的播放状态快照。
    * 主进程用它渲染菜单栏/托盘菜单的标签与勾选态（当前歌名、播放/暂停、静音）。
    */

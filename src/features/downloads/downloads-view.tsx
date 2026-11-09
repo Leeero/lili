@@ -20,6 +20,9 @@ import {
 } from "@/ui/patterns/track-table";
 import { Button } from "@/ui/primitives/button";
 import { Icon } from "@/ui/primitives/icon";
+import { PageState } from "@/ui/states/page-state";
+
+import type { DownloadTaskCapabilities } from "./model";
 
 export interface DownloadRowViewModel {
   id: string;
@@ -32,6 +35,15 @@ export interface DownloadRowViewModel {
   art?: string;
   artKey?: string;
   placeholder?: string;
+  /**
+   * 该行操作带的门控真值（`getDownloadTaskCapabilities` 的计算结果）。
+   *
+   * **不要**用 `status` 展示文案反推可用操作 —— 早期实现是
+   * `row.status.includes("完成")` 这类字符串匹配，等于把展示字符串当状态机：
+   * `canOpen` 还要求 `savePath` 存在，文案匹配查不到；改文案会静默破坏门控。
+   * 门控判断只有 model 层一份，视图消费它的结论。
+   */
+  capabilities: DownloadTaskCapabilities;
 }
 
 export interface DownloadPillViewModel {
@@ -39,6 +51,8 @@ export interface DownloadPillViewModel {
   label: ReactNode;
   variant: PillVariant;
   disabled?: boolean;
+  /** 原生 title 提示（如「打开下载目录」截断后的完整路径）。 */
+  title?: string;
 }
 
 export const downloadColumns = (labels: readonly string[]): TrackTableColumn[] => [
@@ -51,37 +65,60 @@ export const downloadColumns = (labels: readonly string[]): TrackTableColumn[] =
 interface DownloadsViewProps {
   title: ReactNode;
   lead: ReactNode;
+  /** 页面内分类 tab（全部 / 音频 / 视频），渲染在页头正下方。 */
+  tabs?: ReactNode;
+  /**
+   * 布局形态。**真实路径用 `card`（任务卡片网格），夹具 / 保真度比对用
+   * `table`（TrackTable 行表）** —— 这两条路径渲染的是同一份数据视图模型。
+   *
+   * 此前两者靠 `note` 的有无偶然区分（「有注解带 ⇒ 表格分支」），一个渲染
+   * 属性兼任布局开关，读代码时无从知道这层语义；显式 `variant` 把「哪条
+   * 路径对应哪种用途」写进类型。`table` 是设计稿第 6 页的冻结形态，`card`
+   * 是真实数据路径（与屏 01/04 的「真实路径偏离设计稿」同一批决策）。
+   */
+  variant: "card" | "table";
   pills: readonly DownloadPillViewModel[];
   sectionTitle: ReactNode;
   columns: TrackTableColumn[];
   rows: readonly DownloadRowViewModel[];
+  /** 注解带（夹具路径的设计稿原文）；`variant="card"` 时不渲染。 */
   note?: ReactNode;
   onPillPress: (key: string) => void;
   onRowPress: (id: string) => void;
   onRowAction: (id: string, action: string) => void;
 }
 
-const ROW_ACTIONS: ContextMenuItem[] = [
-  { key: "open", label: "定位文件" },
-  { key: "pause", label: "暂停" },
-  { key: "resume", label: "继续" },
-  { key: "retry", label: "重试" },
-  { key: "delete", label: "删除任务", color: "danger" },
-];
+const ROW_ACTIONS = {
+  open: { key: "open", label: "定位文件" },
+  pause: { key: "pause", label: "暂停" },
+  resume: { key: "resume", label: "继续" },
+  retry: { key: "retry", label: "重试" },
+  delete: { key: "delete", label: "删除任务", color: "danger" },
+} as const satisfies Record<string, ContextMenuItem>;
 
-const visibleActions = (row: DownloadRowViewModel) => {
+/**
+ * 行操作带的门控：只认 `capabilities`（model 层按任务真实状态计算）。
+ * 「删除」对一切任务可用，不做门控 —— 删除进行中任务的二次确认在
+ * `confirmBeforeDelete` 之外由调用方弹窗承担。
+ */
+const visibleActions = (row: DownloadRowViewModel): ContextMenuItem[] => {
   const actions: ContextMenuItem[] = [];
-  if (row.status.includes("完成")) actions.push(ROW_ACTIONS[0]!);
-  if (row.status.includes("下载中")) actions.push(ROW_ACTIONS[1]!);
-  if (row.status.includes("暂停")) actions.push(ROW_ACTIONS[2]!);
-  if (row.status.includes("出错")) actions.push(ROW_ACTIONS[3]!);
-  actions.push(ROW_ACTIONS[4]!);
+  const capabilityMap: Array<[boolean, ContextMenuItem]> = [
+    [row.capabilities.canOpen, ROW_ACTIONS.open],
+    [row.capabilities.canPause, ROW_ACTIONS.pause],
+    [row.capabilities.canResume, ROW_ACTIONS.resume],
+    [row.capabilities.canRetry, ROW_ACTIONS.retry],
+  ];
+  for (const [enabled, action] of capabilityMap) if (enabled) actions.push(action);
+  actions.push(ROW_ACTIONS.delete);
   return actions;
 };
 
 export const DownloadsView = ({
   title,
   lead,
+  tabs,
+  variant,
   pills,
   sectionTitle,
   columns,
@@ -93,20 +130,18 @@ export const DownloadsView = ({
 }: DownloadsViewProps) => (
   <>
     <ScrollContainer enableBackToTop className="h-full w-full">
-      {!note ? (
+      {variant === "card" ? (
         <div className="manage4188-page">
-          <header className="manage4188-head">
-            <div>
-              <span>离线内容</span>
-              <h1>{title}</h1>
-              <p>{lead}</p>
-            </div>
+          <h1 className="sr-only">{title}</h1>
+          <div className="manage4188-bar">
+            <div className="manage4188-bar-tabs">{tabs}</div>
             <div className="manage4188-actions">
               {pills.map(pill => (
                 <button
                   key={pill.key}
                   type="button"
                   disabled={pill.disabled}
+                  title={pill.title}
                   className={
                     pill.variant === "primary" ? "is-primary" : pill.variant === "danger" ? "is-danger" : undefined
                   }
@@ -116,60 +151,70 @@ export const DownloadsView = ({
                 </button>
               ))}
             </div>
-          </header>
+          </div>
           <section className="manage4188-downloads">
             <h2>{sectionTitle}</h2>
-            <div className="manage4188-task-grid">
-              {rows.map(row => (
-                <ContextMenu key={row.id} items={visibleActions(row)} onAction={action => onRowAction(row.id, action)}>
-                  <article className="manage4188-task">
-                    <button type="button" className="manage4188-task-main" onClick={() => onRowPress(row.id)}>
-                      {row.art ? <img src={row.art} alt="" /> : <span className="manage4188-task-cover" />}
-                      <span>
-                        <strong>{row.title}</strong>
-                        <small>{row.subtitle}</small>
-                      </span>
-                    </button>
-                    <div className="manage4188-task-status">
-                      <span>
-                        <b>{row.status}</b>
-                        <small>{row.size}</small>
-                      </span>
-                      {row.progress !== undefined && (
-                        <progress max="100" value={row.progress}>
-                          {row.progress}%
-                        </progress>
-                      )}
-                    </div>
-                    <div className="manage4188-task-actions">
-                      {visibleActions(row).map(action => (
-                        <button
-                          key={action.key}
-                          type="button"
-                          aria-label={`${action.label} ${row.title}`}
-                          onClick={() => onRowAction(row.id, action.key)}
-                        >
-                          <Icon
-                            name={
-                              action.key === "delete"
-                                ? "trash"
-                                : action.key === "open"
-                                  ? "folder-open"
-                                  : action.key === "retry"
-                                    ? "refresh"
-                                    : action.key === "pause"
-                                      ? "pause"
-                                      : "play"
-                            }
-                          />
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
-                  </article>
-                </ContextMenu>
-              ))}
-            </div>
+            {rows.length === 0 ? (
+              // 空态文案由调用方通过 sectionTitle 给出（全空 / 筛选空两态），
+              // 这里只负责占位与视觉，不重复描述原因。
+              <PageState kind="empty" className="min-h-[240px]" />
+            ) : (
+              <div className="manage4188-task-grid">
+                {rows.map(row => (
+                  <ContextMenu
+                    key={row.id}
+                    items={visibleActions(row)}
+                    onAction={action => onRowAction(row.id, action)}
+                  >
+                    <article className="manage4188-task">
+                      <button type="button" className="manage4188-task-main" onClick={() => onRowPress(row.id)}>
+                        {row.art ? <img src={row.art} alt="" /> : <span className="manage4188-task-cover" />}
+                        <span>
+                          <strong>{row.title}</strong>
+                          <small>{row.subtitle}</small>
+                        </span>
+                      </button>
+                      <div className="manage4188-task-status">
+                        <span>
+                          <b>{row.status}</b>
+                          <small>{row.size}</small>
+                        </span>
+                        {row.progress !== undefined && (
+                          <progress max="100" value={row.progress}>
+                            {row.progress}%
+                          </progress>
+                        )}
+                      </div>
+                      <div className="manage4188-task-actions">
+                        {visibleActions(row).map(action => (
+                          <button
+                            key={action.key}
+                            type="button"
+                            aria-label={`${action.label} ${row.title}`}
+                            onClick={() => onRowAction(row.id, action.key)}
+                          >
+                            <Icon
+                              name={
+                                action.key === "delete"
+                                  ? "trash"
+                                  : action.key === "open"
+                                    ? "folder-open"
+                                    : action.key === "retry"
+                                      ? "refresh"
+                                      : action.key === "pause"
+                                        ? "pause"
+                                        : "play"
+                              }
+                            />
+                            {action.label}
+                          </button>
+                        ))}
+                      </div>
+                    </article>
+                  </ContextMenu>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       ) : (
@@ -181,6 +226,7 @@ export const DownloadsView = ({
                   key={pill.key}
                   variant={pill.variant}
                   disabled={pill.disabled}
+                  title={pill.title}
                   onClick={() => onPillPress(pill.key)}
                 >
                   {pill.label}
@@ -188,10 +234,11 @@ export const DownloadsView = ({
               ))}
             </FilterBar>
           </PageHeader>
+          {tabs}
           <Section title={sectionTitle}>
             <TrackTable variant="download" columns={columns}>
               {rows.map(row => (
-                <ContextMenu key={row.id} items={ROW_ACTIONS} onAction={action => onRowAction(row.id, action)}>
+                <ContextMenu key={row.id} items={visibleActions(row)} onAction={action => onRowAction(row.id, action)}>
                   <TrackTableRow trackId={row.id}>
                     <TrackIndex value={row.index} />
                     <button

@@ -1,36 +1,38 @@
 /**
  * 4188 原始色板。字面色值只允许在本文件出现。
- * 真值：prototypes/biu-discover-option2/src/styles.css 的「夜航声场主题」。
+ *
+ * 2026-10-13 换肤：色值对齐 lili 交互原型深色主题（逐字照搬原型）。
+ * 语义层（semantic.css）未动，组件引用 --lili-4188-* 无需改动。
  */
 .lili-theme-4188 {
-  --c-4188-canvas: #090b12;
-  --c-4188-surface: #111620;
-  --c-4188-surface-elevated: #182131;
-  --c-4188-surface-hover: #202a3a;
-  --c-4188-surface-pressed: #252e40;
-  --c-4188-border: #2a3447;
-  --c-4188-text-primary: #f5f7fb;
-  --c-4188-text-secondary: #9da8ba;
-  --c-4188-text-muted: #737f95;
-  --c-4188-primary: #796cff;
-  --c-4188-primary-hover: #8c80ff;
-  --c-4188-primary-soft: rgb(121 108 255 / 16%);
-  --c-4188-primary-hover-soft: rgb(121 108 255 / 10%);
-  --c-4188-primary-selected-start: rgb(121 108 255 / 28%);
-  --c-4188-primary-selected-end: rgb(121 108 255 / 11%);
-  --c-4188-playback: #32c5d2;
-  --c-4188-playback-hover: #55d4df;
-  --c-4188-playback-soft: rgb(50 197 210 / 14%);
-  --c-4188-favorite: #f071a8;
+  --c-4188-canvas: #0d0c10;
+  --c-4188-surface: #1b181f;
+  --c-4188-surface-elevated: #242029;
+  --c-4188-surface-hover: #2c2732;
+  --c-4188-surface-pressed: #353040;
+  --c-4188-border: rgb(255 255 255 / 9%);
+  --c-4188-text-primary: #f6f1f8;
+  --c-4188-text-secondary: #b4acb9;
+  --c-4188-text-muted: #807887;
+  --c-4188-primary: #a88bf4;
+  --c-4188-primary-hover: #c3adff;
+  --c-4188-primary-soft: rgb(168 139 244 / 15%);
+  --c-4188-primary-hover-soft: rgb(168 139 244 / 10%);
+  --c-4188-primary-selected-start: rgb(168 139 244 / 28%);
+  --c-4188-primary-selected-end: rgb(168 139 244 / 11%);
+  --c-4188-playback: #62cfcb;
+  --c-4188-playback-hover: #7fd8d4;
+  --c-4188-playback-soft: rgb(98 207 203 / 14%);
+  --c-4188-favorite: #ff7266;
   --c-4188-success: #45c98a;
   --c-4188-warning: #f0b65f;
   --c-4188-error: #ff657a;
-  --c-4188-focus: #a89fff;
-  --c-4188-disabled: rgb(115 127 149 / 46%);
-  --c-4188-scrim: rgb(2 4 7 / 72%);
+  --c-4188-focus: #c3adff;
+  --c-4188-disabled: rgb(128 120 135 / 46%);
+  --c-4188-scrim: rgb(13 12 16 / 72%);
   --c-4188-shadow: rgb(0 0 0 / 52%);
-  --c-4188-player: rgb(17 22 32 / 97%);
-  --c-4188-topbar: rgb(9 11 18 / 84%);
+  --c-4188-player: rgb(27 24 31 / 97%);
+  --c-4188-topbar: rgb(13 12 16 / 84%);
   --c-4188-image-shade-strong: rgb(4 7 12 / 92%);
   --c-4188-image-shade-soft: rgb(4 7 12 / 20%);
   --c-4188-image-label: rgb(0 0 0 / 68%);

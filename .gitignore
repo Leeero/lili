@@ -115,3 +115,8 @@ tools/design-fidelity/.venv
 
 # 智能体工作区（本地记忆与技能，与 .trae 同类）
 .workbuddy/
+# pnpm 本地缓存目录（不应入库）
+.pnpm-store/
+
+# DSH 视觉插件在会话工作区生成的产物目录
+.dsh-vision-toolkit/

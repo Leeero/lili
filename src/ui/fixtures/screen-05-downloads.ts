@@ -2,6 +2,20 @@ import type { FixtureNowPlaying } from "./now-playing";
 
 export const DOWNLOADS_FIXTURE_NAME = "05-downloads";
 
+/** 夹具任务的原始下载状态（MediaDownloadStatus 枚举值）。 */
+export interface FixtureDownloadTask {
+  id: string;
+  index: number;
+  title: string;
+  subtitle: string;
+  /** 原始 MediaDownloadStatus —— 操作带门控由它（而非 status 文案）派生。 */
+  rawStatus: MediaDownloadStatus;
+  status: string;
+  progress?: number;
+  size: string;
+  artIndex: number;
+}
+
 export const SCREEN_05_DOWNLOADS_FIXTURE = {
   header: {
     title: "下载管理",
@@ -12,7 +26,7 @@ export const SCREEN_05_DOWNLOADS_FIXTURE = {
     { kind: "secondary", label: "暂停全部" },
     { kind: "neutral", label: "重试全部失败" },
     { kind: "neutral", label: "清空已完成" },
-    { kind: "danger", label: "清空记录 · 二次确认" },
+    { kind: "danger", label: "清空记录" },
   ],
   section: {
     title: "12 个任务 · 2 个进行中",
@@ -24,6 +38,7 @@ export const SCREEN_05_DOWNLOADS_FIXTURE = {
       index: 1,
       title: "「神呀，接住她的眼泪吧」— 这首歌完整版来啦",
       subtitle: "无损 30251 · 音频 · FLAC · 今天 16:02",
+      rawStatus: "downloading",
       status: "下载中 · 62%",
       progress: 62,
       size: "12.4 MB",
@@ -34,6 +49,7 @@ export const SCREEN_05_DOWNLOADS_FIXTURE = {
       index: 2,
       title: "【猎 Hunter】｜「荒野求生的小曲」",
       subtitle: "杜比 30250 · 音频 · M4A · 今天 15:48",
+      rawStatus: "merging",
       status: "合并分块中 · 40%",
       progress: 40,
       size: "18.7 MB",
@@ -44,6 +60,7 @@ export const SCREEN_05_DOWNLOADS_FIXTURE = {
       index: 3,
       title: "我有两颗搞丸！！！",
       subtitle: "高清 30280 · 视频 · MP4 · 昨天 21:30",
+      rawStatus: "completed",
       status: "已完成 · 可定位文件",
       size: "86.2 MB",
       artIndex: 2,
@@ -53,6 +70,7 @@ export const SCREEN_05_DOWNLOADS_FIXTURE = {
       index: 4,
       title: "录歌 和好朋友在学校的最后一个晚上",
       subtitle: "自动 30232 · 音频 · 今天 14:11",
+      rawStatus: "failed",
       status: "任务出错 · 可重试",
       size: "—",
       artIndex: 3,

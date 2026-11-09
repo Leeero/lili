@@ -200,7 +200,7 @@ L3 单独列出是因为它抓的是 L1/L2 抓不到的东西：玻璃模糊强�
 | 侧栏折叠 / 拖拽调宽 | **删除**（设计稿无此交互，`sideMenuCollapsed` / `sideMenuWidth` 字段保留但不再暴露） |
 | Logo | 顶栏品牌位 |
 
-`src/common/constants/menus.tsx` 的 `DefaultMenuList` 需要从「侧栏菜单项」重构为「头像菜单项」，保留 `hiddenMenuKeys` 过滤能力。
+`src/common/constants/menus.tsx` 的 `DefaultMenuList` 原计划从「侧栏菜单项」重构为「头像菜单项」并保留 `hiddenMenuKeys` 过滤能力；C+ 落地时侧栏改为从 `layout/route-shell.ts` 的 `PRIMARY_NAV_ITEMS` 派生、过滤接线始终没有发生。该文件已在移除「侧边栏显示」设置时一并删除，`hiddenMenuKeys` 字段不再存在。菜单显隐的替代能力是「我的音乐显示」（`hiddenLibraryKeys`），只作用于 `/library`：见 `src/features/library/grouping.ts`。
 
 ---
 

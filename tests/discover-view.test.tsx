@@ -20,7 +20,7 @@ import path from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 
 import { DISCOVER_HEAD_RHYTHM } from "@/features/discover/discover-heading";
-import { DISCOVER_RHYTHM, DiscoverView, type DiscoverViewProps } from "@/features/discover/discover-view";
+import { DISCOVER_RHYTHM, DiscoverBody, DiscoverView, type DiscoverViewProps } from "@/features/discover/discover-view";
 import { PLACEHOLDER_RADIALS } from "@/ui/fixtures/placeholder-art";
 import { SCREEN_07_DISCOVER_CARD_FIXTURE } from "@/ui/fixtures/screen-07-discover-card";
 
@@ -171,14 +171,14 @@ describe("屏 07 呈现结构", () => {
   test("大卡占位资产与播放动作都落在正式 4188 组件中", async () => {
     const container = await render(<DiscoverView {...fixtureProps()} />);
 
-    const hero = container.querySelector(".discover4188-hero") as HTMLElement | null;
-    expect(hero).not.toBeNull();
-    expect(hero?.style.getPropertyValue("--discover-art")).toBe(PLACEHOLDER_RADIALS.heroCard);
+    // hero-card 布局：16:9 封面（占位渐变落在 art 内层，不在整卡上）+ 圆形播放键。
+    const art = container.querySelector(".discover4188-hero-art") as HTMLElement | null;
+    expect(art).not.toBeNull();
+    expect(art?.style.getPropertyValue("--discover-art")).toBe(PLACEHOLDER_RADIALS.heroCard);
 
-    const play = Array.from(container.querySelectorAll("button")).find(button =>
-      button.textContent?.includes("立即播放"),
-    );
+    const play = container.querySelector(".discover4188-hero-play");
     expect(play).not.toBeNull();
+    expect(play?.getAttribute("aria-label")).toContain("播放");
   });
 
   test("专辑卡是 3 张，封面尺寸走令牌，且**没有画幅说明**", async () => {
@@ -211,5 +211,60 @@ describe("屏 07 呈现结构", () => {
 
     expect(container.querySelectorAll("section")).toHaveLength(1);
     expect(container.querySelector("article")).not.toBeNull();
+  });
+});
+
+/**
+ * 真实路径（发现音乐）按产品要求不要页头，直接用 `DiscoverBody`（hero + 若干段）。
+ * 夹具路径仍走 `DiscoverView`（页头 + 同一份内容区的单段形态）。这一组钉住
+ * 「内容区自己不带页头」，否则哪天有人把页头挪进 `DiscoverBody`，
+ * 真实路径会悄悄长回 H1 与导语，而屏 07 的比对仍然是绿的。
+ */
+describe("DiscoverBody：无页头的内容区", () => {
+  test("只渲染内容区，H1 / 导语 / 筛选条一个都没有", async () => {
+    const props = fixtureProps();
+    const container = await render(
+      <DiscoverBody hero={props.hero} sections={[{ title: props.albumSectionTitle, albums: props.albums }]} />,
+    );
+
+    expect(container.querySelector("h1")).toBeNull();
+    expect(container.querySelector("p")).toBeNull();
+    expect(container.querySelector('[aria-label="发现音乐筛选"]')).toBeNull();
+    // 大卡 + 专辑区两段，页头不在其中。
+    expect(container.querySelectorAll("section")).toHaveLength(2);
+  });
+
+  test("content 槽位整段替换内容区（页面框因此得以常驻不闪）", async () => {
+    const props = fixtureProps();
+    const container = await render(
+      <DiscoverBody
+        content={<p className="fixture-state">加载中</p>}
+        hero={props.hero}
+        sections={[{ title: props.albumSectionTitle, albums: props.albums }]}
+      />,
+    );
+
+    expect(container.textContent).toBe("加载中");
+    expect(container.querySelectorAll("section")).toHaveLength(0);
+  });
+
+  test("多段按序渲染，空段自动跳过", async () => {
+    const props = fixtureProps();
+    const container = await render(
+      <DiscoverBody
+        hero={null}
+        sections={[
+          { title: "新歌", albums: props.albums },
+          { title: "空段", albums: [] },
+          { title: "综合推荐", albums: props.albums },
+        ]}
+      />,
+    );
+
+    const headings = Array.from(container.querySelectorAll(".discover4188-section-head h2")).map(
+      node => node.textContent,
+    );
+    expect(headings).toEqual(["新歌", "综合推荐"]);
+    expect(container.querySelectorAll("section.discover4188-section")).toHaveLength(2);
   });
 });

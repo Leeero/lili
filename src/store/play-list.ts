@@ -93,6 +93,7 @@ export interface PlayItem {
   audioUrl?: string;
   title: string;
   bvid?: string;
+  cid?: string;
   sid?: number;
   cover?: string;
   ownerName?: string;
@@ -101,6 +102,11 @@ export interface PlayItem {
 
 interface Action {
   togglePlay: () => void;
+  /**
+   * 只暂停、不切换：已暂停时为 no-op。
+   * 供「自动暂停」（锁屏 / 休眠 / 耳机断开）使用 —— 用 togglePlay 会在已暂停时反而开始播放。
+   */
+  pause: () => void;
   toggleMute: () => void;
   setVolume: (volume: number) => void; // 0-1
   togglePlayMode: () => void;
@@ -532,6 +538,18 @@ export const usePlayList = create<State & Action>()(
             audio.currentTime = s;
           }
         },
+        pause: () => {
+          if (audio.paused) {
+            return;
+          }
+
+          audio.pause();
+
+          // audio.onpause 会同步 isPlaying，这里再显式落一次，保证未执行 init 时状态也一致
+          set(state => {
+            state.isPlaying = false;
+          });
+        },
         togglePlay: async () => {
           if (!get().list?.length) {
             return;
@@ -557,7 +575,7 @@ export const usePlayList = create<State & Action>()(
         setShouldKeepPagesOrderInRandomPlayMode: shouldKeep => {
           set({ shouldKeepPagesOrderInRandomPlayMode: shouldKeep });
         },
-        play: async ({ type, bvid, sid, title, cover, ownerName, ownerMid, id, source, audioUrl }: PlayItem) => {
+        play: async ({ type, bvid, cid, sid, title, cover, ownerName, ownerMid, id, source, audioUrl }: PlayItem) => {
           const { list, playId } = get();
           const currentItem = list?.find(item => item.id === playId);
           const sanitizedTitle = sanitizeTitle(title);
@@ -603,6 +621,7 @@ export const usePlayList = create<State & Action>()(
                     id: idGenerator(),
                     type,
                     bvid,
+                    cid,
                     sid,
                     title: sanitizedTitle,
                     cover: cover ? formatUrlProtocol(cover) : undefined,
@@ -746,7 +765,7 @@ export const usePlayList = create<State & Action>()(
             state.playId = list[prevIndex].id;
           });
         },
-        addToNext: async ({ type, title, bvid, sid, cover, ownerName, ownerMid, id, source, audioUrl }) => {
+        addToNext: async ({ type, title, bvid, cid, sid, cover, ownerName, ownerMid, id, source, audioUrl }) => {
           const { playId, nextId: currentNextId, list } = get();
           const currentItem = list.find(item => item.id === playId);
           const sanitizedTitle = sanitizeTitle(title);
@@ -800,6 +819,7 @@ export const usePlayList = create<State & Action>()(
                     id: idGenerator(),
                     type,
                     bvid,
+                    cid,
                     sid,
                     title: sanitizedTitle,
                     cover: cover ? formatUrlProtocol(cover) : undefined,

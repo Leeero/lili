@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 
-import { Avatar, Card, CardBody, addToast } from "@heroui/react";
+import { addToast } from "@heroui/react";
 import { RiAddLine, RiFlashlightFill, RiUserFollowLine } from "@remixicon/react";
+import clx from "classnames";
 
 import { formatNumber } from "@/common/utils/number";
 import { formatUrlProtocol } from "@/common/utils/url";
-import AsyncButton from "@/components/async-button";
 import { postRelationModify, UserRelationAction } from "@/service/relation-modify";
+import { Artwork } from "@/ui/primitives/artwork";
 
 import { type SearchUserItemWithRelation } from "./utils";
 
@@ -15,11 +16,20 @@ interface UserCardProps {
   u: SearchUserItemWithRelation;
 }
 
+/**
+ * 创作者卡：点上半区进主页，关注按钮独立，不会连带触发导航。
+ * 视觉令牌全部走 4188；等级徽标取 `--lili-4188-favorite`，不再写 B 站粉的字面色。
+ */
 const UserCard: React.FC<UserCardProps> = ({ u }) => {
   const navigate = useNavigate();
   const [isFollowed, setIsFollowed] = useState(u.is_followed);
+  const [pending, setPending] = useState(false);
+
+  const openProfile = () => navigate(`/user/${u.mid}`);
 
   const handleFollow = async () => {
+    if (pending) return;
+    setPending(true);
     try {
       const act = isFollowed ? UserRelationAction.Unfollow : UserRelationAction.Follow;
       const res = await postRelationModify({
@@ -29,87 +39,68 @@ const UserCard: React.FC<UserCardProps> = ({ u }) => {
       });
       if (res.code === 0) {
         setIsFollowed(!isFollowed);
-        addToast({
-          title: isFollowed ? "已取消关注" : "已关注",
-          color: "success",
-        });
+        addToast({ title: isFollowed ? "已取消关注" : "已关注", color: "success" });
       } else {
-        addToast({
-          title: res.message || "操作失败",
-          color: "danger",
-        });
+        addToast({ title: res.message || "操作失败", color: "danger" });
       }
     } catch {
-      addToast({
-        title: "操作失败",
-        color: "danger",
-      });
+      addToast({ title: "操作失败", color: "danger" });
+    } finally {
+      setPending(false);
     }
   };
 
   return (
-    <Card
-      isHoverable
-      isPressable
-      as="div"
-      aria-label={`打开创作者 ${u.uname}`}
-      onPress={() => navigate(`/user/${u.mid}`)}
-      className="social4188-person-card border border-[rgb(var(--lili-color-border)/0.06)] bg-[rgb(var(--lili-color-surface))] shadow-none transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[var(--lili-shadow-card)]"
-    >
-      <CardBody className="flex flex-col items-center gap-y-3 p-5">
-        {/* Avatar Section */}
-        <div className="relative flex-none">
-          <Avatar className="h-20 w-20" src={formatUrlProtocol(u.upic as string)} isBordered />
-          {u.official_verify?.type === 0 && (
-            <div className="bg-warning ring-background absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full text-white ring-2">
-              <RiFlashlightFill size={12} />
-            </div>
+    <article className="search4188-user-card">
+      <div
+        className="search4188-user-open"
+        role="button"
+        tabIndex={0}
+        aria-label={`打开创作者 ${u.uname}`}
+        onClick={openProfile}
+        onKeyDown={event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openProfile();
+          }
+        }}
+      >
+        <span className="search4188-user-avatar-wrap">
+          <Artwork
+            src={formatUrlProtocol(u.upic)}
+            artKey={String(u.mid)}
+            alt=""
+            radius="round"
+            gradient="avatar"
+            params="160w_160h_1c.avif"
+            className="search4188-user-avatar"
+          />
+          {u.official_verify?.type !== undefined && u.official_verify.type >= 0 && (
+            <span className="search4188-user-verify" aria-label={u.official_verify.desc || "认证"}>
+              <RiFlashlightFill size={10} aria-hidden="true" />
+            </span>
           )}
-          {u.official_verify?.type === 1 && (
-            <div className="bg-primary ring-background absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full text-white ring-2">
-              <RiFlashlightFill size={12} />
-            </div>
-          )}
-        </div>
-
-        {/* Info Section */}
-        <div className="flex w-full min-w-0 grow flex-col items-center justify-between space-y-1">
-          {/* Name & Level */}
-          <div className="flex flex-col items-center space-y-1">
-            <div className="flex w-full items-center justify-center gap-2">
-              <span className="text-foreground truncate text-lg font-bold">{u.uname}</span>
-              {u.level && (
-                <span className="flex h-4 min-w-[24px] flex-none items-center justify-center rounded-[2px] bg-[#FB7299] px-1 text-[10px] font-bold text-white italic">
-                  LV{u.level}
-                </span>
-              )}
-            </div>
-            <span className="text-small text-default-500 whitespace-nowrap">{formatNumber(u.fans)}粉丝</span>
-          </div>
-
-          {/* Stats & Sign */}
-          <div className="text-small text-default-500 flex w-full min-w-0 flex-col items-center space-y-1">
-            {u.usign && <span className="line-clamp-2 max-w-full min-w-0 flex-1 break-all">{u.usign}</span>}
-          </div>
-          {/* Button */}
-          <div className="mt-2">
-            <AsyncButton
-              size="sm"
-              color={isFollowed ? "success" : "default"}
-              variant={isFollowed ? "flat" : "solid"}
-              radius="sm"
-              onClick={event => event.stopPropagation()}
-              onPress={async () => {
-                await handleFollow();
-              }}
-              startContent={isFollowed ? <RiUserFollowLine size={18} /> : <RiAddLine size={18} />}
-            >
-              {isFollowed ? "已关注" : "关注"}
-            </AsyncButton>
-          </div>
-        </div>
-      </CardBody>
-    </Card>
+          {u.level !== undefined && <span className="search4188-user-level">LV{u.level}</span>}
+        </span>
+        <span className="search4188-user-name" title={u.uname}>
+          {u.uname || "未知创作者"}
+        </span>
+        <span className="search4188-user-fans">
+          {typeof u.fans === "number" ? `${formatNumber(u.fans)} 粉丝` : "B 站创作者"}
+        </span>
+        <span className="search4188-user-sign">{u.usign || "这个人很神秘，什么都没有写。"}</span>
+      </div>
+      <button
+        type="button"
+        className={clx("search4188-follow", isFollowed && "is-followed")}
+        aria-pressed={isFollowed}
+        disabled={pending}
+        onClick={() => void handleFollow()}
+      >
+        {isFollowed ? <RiUserFollowLine size={14} aria-hidden="true" /> : <RiAddLine size={14} aria-hidden="true" />}
+        {pending ? "处理中…" : isFollowed ? "已关注" : "关注"}
+      </button>
+    </article>
   );
 };
 

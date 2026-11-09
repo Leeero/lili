@@ -11,7 +11,6 @@ import {
   PLAYLIST_DETAIL_FIXTURE_NAME,
   SCREEN_02_PLAYLIST_DETAIL_FIXTURE,
 } from "@/ui/fixtures/screen-02-playlist-detail";
-import { SCREEN_03_WATCH_LATER_FIXTURE, WATCH_LATER_FIXTURE_NAME } from "@/ui/fixtures/screen-03-watch-later";
 import { LOCAL_MUSIC_FIXTURE_NAME, SCREEN_04_LOCAL_MUSIC_FIXTURE } from "@/ui/fixtures/screen-04-local-music";
 import { DOWNLOADS_FIXTURE_NAME, SCREEN_05_DOWNLOADS_FIXTURE } from "@/ui/fixtures/screen-05-downloads";
 import { SEARCH_FIXTURE_NAME, SCREEN_06_SEARCH_FIXTURE } from "@/ui/fixtures/screen-06-search";
@@ -46,7 +45,6 @@ export const NOW_PLAYING_FIXTURES: Record<string, FixtureNowPlaying> = {
   [SEARCH_FIXTURE_NAME]: SCREEN_06_SEARCH_FIXTURE.nowPlaying,
   [DISCOVER_CARD_FIXTURE_NAME]: SCREEN_07_DISCOVER_CARD_FIXTURE.nowPlaying,
   [DISCOVER_LIST_FIXTURE_NAME]: SCREEN_08_DISCOVER_LIST_FIXTURE.nowPlaying,
-  [WATCH_LATER_FIXTURE_NAME]: SCREEN_03_WATCH_LATER_FIXTURE.nowPlaying,
   [LOCAL_MUSIC_FIXTURE_NAME]: SCREEN_04_LOCAL_MUSIC_FIXTURE.nowPlaying,
   [DOWNLOADS_FIXTURE_NAME]: SCREEN_05_DOWNLOADS_FIXTURE.nowPlaying,
   [QUEUE_FIXTURE_NAME]: SCREEN_09_QUEUE_FIXTURE.nowPlaying,
@@ -74,6 +72,8 @@ export interface NowPlaying {
   ownerMid?: number;
   /** 多集视频 —— 决定播放栏左段是否出现分集列表入口。 */
   hasMultiPart: boolean;
+  /** 视频稿件（type mv）—— 决定播放栏左段是否出现「点赞」入口（音频区无点赞）。 */
+  isVideo: boolean;
   /** 本地曲目 —— 收藏 / 更多菜单 / 副行跳转在本地曲目上都不适用。 */
   sourceIsLocal: boolean;
   cover?: string;
@@ -107,6 +107,7 @@ export const useNowPlaying = (): NowPlaying => {
       ownerClickable: false,
       ownerMid: undefined,
       hasMultiPart: false,
+      isVideo: false,
       sourceIsLocal: fixture.source === "local",
       // 封面:**不给地址**, 由 Artwork 回落到 playbarCover 占位 —— 见 placeholder-art.ts。
       cover: undefined,
@@ -129,6 +130,7 @@ export const useNowPlaying = (): NowPlaying => {
     ownerClickable: playItem?.source !== "local" && Boolean(playItem?.ownerMid),
     ownerMid: playItem?.ownerMid,
     hasMultiPart: Boolean(playItem?.hasMultiPart),
+    isVideo: playItem?.type === "mv",
     sourceIsLocal: playItem?.source === "local",
     cover: playItem?.pageCover || playItem?.cover,
     controlsDisabled: isEmpty,

@@ -1,5 +1,5 @@
 import React from "react";
-import { Controller } from "react-hook-form";
+import { Controller, useWatch } from "react-hook-form";
 import type { Control, UseFormSetValue } from "react-hook-form";
 
 import { Button, Form, Input, Radio, RadioGroup, Select, SelectItem, Switch, Tab, Tabs } from "@heroui/react";
@@ -35,6 +35,9 @@ export const SystemSettingsTab = ({
   setValue,
   section,
 }: SystemSettingsTabProps) => {
+  // 「解锁后自动继续播放」只在锁屏暂停开启时才有意义，用 watch 让它跟着联动显示
+  const autoPauseOnLock = useWatch({ control, name: "autoPauseOnLock" });
+
   return (
     <Form className="space-y-6">
       {section === "general" && (
@@ -195,6 +198,52 @@ export const SystemSettingsTab = ({
               )}
             />
           </div>
+
+          <h2>自动暂停</h2>
+          {/* 锁屏 / 息屏 / 休眠暂停 */}
+          <div className="flex w-full items-center justify-between gap-4">
+            <div className="mr-6 space-y-1">
+              <div className="text-medium font-medium">锁屏或休眠时暂停</div>
+              <div className="text-sm text-zinc-500">人离开电脑时自动静音，回来不会突然出声</div>
+            </div>
+            <Controller
+              control={control}
+              name="autoPauseOnLock"
+              render={({ field }) => (
+                <Switch disableAnimation isSelected={field.value} onValueChange={field.onChange} />
+              )}
+            />
+          </div>
+          {/* 耳机 / 音频输出设备断开暂停 */}
+          <div className="flex w-full items-center justify-between gap-4">
+            <div className="mr-6 space-y-1">
+              <div className="text-medium font-medium">耳机或音频输出设备断开时暂停</div>
+              <div className="text-sm text-zinc-500">拔出耳机、蓝牙断开时立即静音，避免从扬声器漏音</div>
+            </div>
+            <Controller
+              control={control}
+              name="autoPauseOnAudioDeviceLost"
+              render={({ field }) => (
+                <Switch disableAnimation isSelected={field.value} onValueChange={field.onChange} />
+              )}
+            />
+          </div>
+          {/* 解锁 / 唤醒后自动续播：依赖锁屏暂停，未开启时整行不渲染 */}
+          {autoPauseOnLock && (
+            <div className="flex w-full items-center justify-between gap-4">
+              <div className="mr-6 space-y-1">
+                <div className="text-medium font-medium">解锁后自动继续播放</div>
+                <div className="text-sm text-zinc-500">仅当刚才由系统暂停、且没有切换歌曲时生效</div>
+              </div>
+              <Controller
+                control={control}
+                name="autoPauseResumeOnUnlock"
+                render={({ field }) => (
+                  <Switch disableAnimation isSelected={field.value} onValueChange={field.onChange} />
+                )}
+              />
+            </div>
+          )}
         </>
       )}
       {section === "download" && (

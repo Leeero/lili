@@ -53,7 +53,8 @@ export const getAllFavTracks = async ({ id: favFolderId }: { id: string }) => {
     }
   }
 
-  return adaptFavoriteResourcesToTracks(allInfos);
+  // 失效/合集条目不进播放队列：没有可播源，塞进去只会带进死条目。
+  return adaptFavoriteResourcesToTracks(allInfos).filter(t => !t.invalid && t.collectionHref === undefined);
 };
 
 export const getAllFavMedia = async ({ id }: { id: string }) => (await getAllFavTracks({ id })).map(toPlayItem);

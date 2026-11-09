@@ -13,6 +13,8 @@ import {
   getDownloadTaskCapabilities,
   type DownloadFilter,
 } from "@/features/downloads/model";
+import SegmentNav from "@/layout/topbar/segment-nav";
+import { useRouteSegments } from "@/layout/use-route-segments";
 import { useModalStore } from "@/store/modal";
 import { useSettings } from "@/store/settings";
 import { PageState } from "@/ui/states/page-state";
@@ -56,6 +58,8 @@ const DownloadList = () => {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const filter = (params.get("type") ?? "all") as DownloadFilter;
+  const { segments, activeKey } = useRouteSegments();
+  const tabs = segments.length > 0 ? <SegmentNav segments={segments} activeKey={activeKey} /> : null;
 
   const load = useCallback(async () => {
     if (fixture) return;
@@ -95,6 +99,8 @@ const DownloadList = () => {
         size: source.totalBytes ? filesize(source.totalBytes) : "—",
         art: source.cover,
         artKey: source.id,
+        // 操作带门控走 model 层的能力计算，不用 status 文案反推（见视图模型注释）。
+        capabilities: getDownloadTaskCapabilities(source),
       })),
     [views],
   );
@@ -146,6 +152,8 @@ const DownloadList = () => {
       <DownloadsView
         title={fixture.header.title}
         lead={fixture.header.lead}
+        tabs={tabs}
+        variant="table"
         pills={fixture.filterPills.map((pill, index) => ({ key: String(index), ...pill, variant: pill.kind }))}
         sectionTitle={fixture.section.title}
         columns={downloadColumns(fixture.section.head)}
@@ -162,8 +170,15 @@ const DownloadList = () => {
   if (failed) return <PageState kind="error" actionLabel="重新加载" onAction={() => void load()} />;
 
   const running = counts.downloading + counts.processing;
+
+  /**
+   * 主按钮的路径尾巴：完整路径常超过 300px（用户目录越深越长），会把
+   * 操作组挤成两行。截成末段（`…/Downloads`），完整路径由 title 悬停揭示；
+   * 路径未配置时不带尾巴（IPC 侧会回落到缺省目录）。
+   */
+  const dirTail = downloadPath ? ` · …/${downloadPath.split(/[\\/]/).filter(Boolean).at(-1)}` : "";
   const pills = [
-    { key: "open-dir", label: `打开下载目录${downloadPath ? ` · ${downloadPath}` : ""}`, variant: "primary" as const },
+    { key: "open-dir", label: `打开下载目录${dirTail}`, variant: "primary" as const, title: downloadPath },
     {
       key: "pause-all",
       label: "暂停全部",
@@ -182,15 +197,27 @@ const DownloadList = () => {
       variant: "neutral" as const,
       disabled: !tasks.some(task => task.status === "completed"),
     },
-    { key: "clear", label: "清空记录 · 二次确认", variant: "danger" as const, disabled: !tasks.length },
+    // 按钮名不带「· 二次确认」——确认流程由点击后的弹窗承担（danger 变红已给
+    // 视觉前置预警）；把交互流程写进按钮名是设计稿旧稿的习惯，1.3.38 起订正。
+    { key: "clear", label: "清空记录", variant: "danger" as const, disabled: !tasks.length },
   ];
 
   return (
     <DownloadsView
       title="下载管理"
       lead="查看下载进度并管理正在进行或已完成的任务。"
+      tabs={tabs}
+      variant="card"
       pills={pills}
-      sectionTitle={`${tasks.length} 个任务 · ${running} 个进行中`}
+      // 空态区分两种：全空（从未下载过）与「当前筛选无结果」（另一 tab 下有任务）。
+      // 库页对「全隐藏」与「确实没有」同样分两态—— 指错方向的空态比空白更糟。
+      sectionTitle={
+        tasks.length === 0
+          ? "暂无下载任务 — 从任意曲目的操作菜单选择「下载音频」开始"
+          : rows.length === 0
+            ? "当前分类暂无任务 — 切换到「全部」查看全部记录"
+            : `${tasks.length} 个任务 · ${running} 个进行中`
+      }
       columns={downloadColumns(["#", "文件", "状态", "大小"])}
       rows={rows}
       onPillPress={key => {

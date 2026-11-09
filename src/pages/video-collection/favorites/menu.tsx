@@ -12,23 +12,29 @@ interface Props {
   /** 2:视频稿件 12:音频 21:视频合集 24:电影 */
   type: number;
   isCreatedBySelf: boolean;
+  /** 失效条目（attr 9/1）：播放/入队/下载/收藏类动作全部剪掉，只留「在 B 站打开」。 */
+  invalid?: boolean;
 }
 
-export const getContextMenus = ({ type, isCreatedBySelf }: Props) => {
+export const getContextMenus = ({ type, isCreatedBySelf, invalid = false }: Props) => {
   const isAudio = type === 12;
-  const canNotPlay = ![2, 12].includes(type);
+  // 失效或合集条目都不可播放/入队/下载。
+  const canNotPlay = invalid || ![2, 12].includes(type);
 
   return [
     {
       icon: <RiStarLine size={18} />,
       key: "favorite",
       label: isCreatedBySelf ? "移动" : "收藏",
+      // 失效/合集不能再被收藏或移动。
+      hidden: canNotPlay,
     },
     {
       icon: <RiStarOffLine size={18} />,
       key: "cancelFavorite",
       label: "取消收藏",
-      hidden: !isCreatedBySelf,
+      // 失效条目仍可「取消收藏」（把它从收藏夹清掉）；合集不可。
+      hidden: !isCreatedBySelf || type === 21,
     },
     {
       icon: <RiPlayCircleLine size={18} />,

@@ -50,6 +50,8 @@ export interface DetailTrackRow {
 export interface PlaylistDetailViewProps {
   title: string;
   lead: ReactNode;
+  /** 页面内分类 tab（收藏夹 / 合集 / 系列），渲染在页头正下方。 */
+  tabs?: ReactNode;
   pills: DetailPill[];
   sectionTitle: string;
   columns: TrackTableColumn[];
@@ -84,6 +86,7 @@ export interface PlaylistDetailViewProps {
 export const PlaylistDetailView = ({
   title,
   lead,
+  tabs,
   pills,
   sectionTitle,
   columns,
@@ -115,6 +118,7 @@ export const PlaylistDetailView = ({
             ))}
           </div>
         </header>
+        {tabs}
         <div className="asset4188-section-head">
           <h2>{sectionTitle}</h2>
         </div>
@@ -144,6 +148,8 @@ export const PlaylistDetailView = ({
             )}
           </FilterBar>
         </PageHeader>
+
+        {tabs}
 
         <Section title={sectionTitle}>
           <TrackTable columns={columns} currentId={tracks.find(row => row.current)?.id}>

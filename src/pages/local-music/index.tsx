@@ -6,6 +6,8 @@ import { LocalMusicView } from "@/features/local-music/local-music-view";
 import { adaptLocalMusicCard, createLocalTrackEntries, filterLocalMusic } from "@/features/local-music/model";
 import { executePlaylistBulkAction } from "@/features/playlist/bulk-actions";
 import { executeTrackAction } from "@/features/track/actions";
+import SegmentNav from "@/layout/topbar/segment-nav";
+import { useRouteSegments } from "@/layout/use-route-segments";
 import { useModalStore } from "@/store/modal";
 import { useSettings } from "@/store/settings";
 import { PageState } from "@/ui/states/page-state";
@@ -23,6 +25,8 @@ const LocalMusicPage = () => {
   const directoryIndex = searchParams.get("dir") ?? "all";
   const selectedDir = directoryIndex === "all" ? "all" : localDirs[Number(directoryIndex)] || "all";
   const keyword = searchParams.get("key") ?? "";
+  const { segments, activeKey } = useRouteSegments();
+  const tabs = segments.length > 0 ? <SegmentNav segments={segments} activeKey={activeKey} /> : null;
 
   const scan = useCallback(async () => {
     if (fixture) return;
@@ -107,6 +111,7 @@ const LocalMusicPage = () => {
       <LocalMusicView
         title={fixture.header.title}
         lead={fixture.header.lead}
+        tabs={tabs}
         cards={fixture.cards}
         note={searchParams.get("preview") === "4188" ? undefined : fixture.note}
         selectedId={fixture.cards[0].id}
@@ -133,8 +138,8 @@ const LocalMusicPage = () => {
       />
     );
   }
-  if (!cards.length) {
-    return (
+  const emptyState =
+    cards.length === 0 ? (
       <PageState
         kind="empty"
         title="当前筛选下没有本地音乐"
@@ -142,13 +147,13 @@ const LocalMusicPage = () => {
         actionLabel="重新扫描"
         onAction={() => void scan()}
       />
-    );
-  }
+    ) : undefined;
 
   return (
     <LocalMusicView
       title="本地音乐"
       lead={`${localDirs.length} 个目录 · ${items.length} 个文件 · 支持常见音频格式`}
+      tabs={tabs}
       cards={cards}
       selectedId={selectedId}
       onPlayAll={() => playAll(false)}
@@ -161,6 +166,8 @@ const LocalMusicPage = () => {
         if (entry) void executeTrackAction("play", entry.track);
       }}
       onCardAction={handleCardAction}
+      emptyState={emptyState}
+      compact
     />
   );
 };

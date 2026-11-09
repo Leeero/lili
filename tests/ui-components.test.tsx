@@ -292,6 +292,32 @@ describe("键盘路径", () => {
     expect(Array.from(container.querySelectorAll("button"))).toHaveLength(0);
   });
 
+  /**
+   * jsdom 不做布局，量不到宽度；这里钉住的是**契约**：分段控件的底按内容收窄。
+   *
+   * 少了 `w-fit`，块级父级会把这块背景药丸拉成整行 —— 发现音乐页的
+   * 「音乐分区 / 新碟与新歌」正落在 `PageHeader` 的标题列（块级）里，CDP 实测
+   * 背景宽 1136px（与 H1 同宽），修好后 232px。`flex-none` 单独挡不住：它只在
+   * 父级是 flex 行时生效，块级父级与 flex 列的交叉轴拉伸都能穿透。
+   */
+  test("分段控件的容器按内容收窄，不被块级父级拉满", async () => {
+    const container = await render(
+      <SegmentedControl
+        label="数据源"
+        activeKey="region"
+        onSelect={() => undefined}
+        items={[
+          { key: "region", label: "音乐分区" },
+          { key: "module", label: "新碟与新歌" },
+        ]}
+      />,
+    );
+
+    const group = container.querySelector('[role="group"][aria-label="数据源"]');
+    expect(group?.className).toContain("w-fit");
+    expect(group?.className).toContain("flex-none");
+  });
+
   test("轨道行：重排行只在给了 position 时可拖，且不给行加 tabIndex", async () => {
     const container = await render(
       <TrackTable onReorder={() => undefined}>
@@ -479,18 +505,22 @@ describe("瓦片、歌词、进度、创作者行", () => {
   });
 });
 
-/* ------------------------------------------------- 顶栏分段组（消费取证） */
+/* ------------------------------------------------- 分段导航（消费取证） */
 
-describe("顶栏分段组消费的是原型登记的那几个令牌", () => {
+describe("分段导航消费的是原型登记的那几个令牌", () => {
   /**
    * 这条测试是防**回退**的：内联版曾把两处白色叠层临时收敛到更接近的
    * `surface-hover`（白 10%），因为 8% / 9% 当时没登记进色板。P2 登记之后
    * 改回了原型值 —— 如果哪天又有人「图省事」换回语义档位，这里会红。
+   *
+   * 分段导航已默认切到下划线 tab（页面内容区分类导航），`pill` 是显式保留档 ——
+   * 沉浸态模式段等仍需要反色药丸的场合。药丸档的令牌因此仍要钉住。
    */
-  test("容器底白 9%、悬停底白 8%、未激活文字用顶栏标签色", async () => {
+  test("pill 档：容器底白 9%、悬停底白 8%、未激活文字用标签色", async () => {
     const container = await render(
       <MemoryRouter initialEntries={["/library"]}>
         <SegmentNav
+          variant="pill"
           activeKey="/library"
           segments={[
             { label: "我的音乐库", href: "/library" },
@@ -503,8 +533,6 @@ describe("顶栏分段组消费的是原型登记的那几个令牌", () => {
     const group = container.querySelector("nav");
     expect(group).not.toBeNull();
     expect(group?.className).toContain("--lili-veil-9");
-    // 整条顶栏是可拖动窗口区域，分段组必须自己挡住拖动才点得到。
-    expect(group?.className).toContain("window-no-drag");
     // 导航型：激活态走 aria-current，未激活项才是「标签色 + 8% 悬停」。
     expect(container.querySelector('a[aria-current="page"]')).toHaveTextContent("我的音乐库");
 
@@ -513,33 +541,57 @@ describe("顶栏分段组消费的是原型登记的那几个令牌", () => {
     expect(inactive?.className).toContain("--lili-veil-8");
   });
 
+  test("缺省是下划线 tab：无药丸底、激活项画强调色下划线", async () => {
+    const container = await render(
+      <MemoryRouter initialEntries={["/library"]}>
+        <SegmentNav
+          activeKey="created"
+          segments={[
+            { key: "created", label: "我创建的", href: "/library?tab=created" },
+            { key: "followed", label: "我追的", href: "/library?tab=followed" },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+
+    const group = container.querySelector("nav");
+    expect(group).not.toBeNull();
+    // 下划线档没有药丸底（veil-9 是药丸容器底，不应出现），改画一条分隔线。
+    expect(group?.className).not.toContain("--lili-veil-9");
+    expect(group?.className).toContain("border-b");
+
+    const active = container.querySelector('a[aria-current="page"]');
+    expect(active).toHaveTextContent("我创建的");
+    expect(active?.className).toContain("--lili-accent");
+  });
+
   /**
-   * `/collection/:id` 的三段共用同一个 pathname、只靠 `?type=` 区分，所以
-   * `href` 写成 query-only 的相对形式（`?type=21`），由本层与当前地址合并。
+   * query 型分段的 href 沿用当前路径与其余参数：分段用 query-only 的相对
+   * `href`（如 `?tab=followed`）时，由本层与当前地址合并。
    *
    * 这条测的是**合并**，不是拼字符串：不合并的话，夹具模式（`?fixture=…`）
    * 下点一下分段就会掉出夹具，而画面上的差别要到重跑比对才看得出来。
    */
   test("query 型分段的 href 沿用当前路径与其余参数", async () => {
     const container = await render(
-      <MemoryRouter initialEntries={["/collection/1?fixture=02-playlist-detail"]}>
+      <MemoryRouter initialEntries={["/library?fixture=01-library"]}>
         <SegmentNav
-          activeKey="11"
+          activeKey="created"
           segments={[
-            { key: "11", label: "收藏夹 · 11", href: "?type=11" },
-            { key: "21", label: "合集 · 21", href: "?type=21" },
+            { key: "created", label: "我创建的", href: "?tab=created" },
+            { key: "followed", label: "我追的", href: "?tab=followed" },
           ]}
         />
       </MemoryRouter>,
     );
 
     const active = container.querySelector('a[aria-current="page"]');
-    expect(active).toHaveTextContent("收藏夹 · 11");
-    // 路径、夹具参数、分段给的 type —— 三者都要在。
-    expect(active?.getAttribute("href")).toBe("/collection/1?fixture=02-playlist-detail&type=11");
+    expect(active).toHaveTextContent("我创建的");
+    // 路径、夹具参数、分段给的 tab —— 三者都要在。
+    expect(active?.getAttribute("href")).toBe("/library?fixture=01-library&tab=created");
 
-    const other = Array.from(container.querySelectorAll("a")).find(node => node.textContent === "合集 · 21");
-    expect(other?.getAttribute("href")).toBe("/collection/1?fixture=02-playlist-detail&type=21");
+    const other = Array.from(container.querySelectorAll("a")).find(node => node.textContent === "我追的");
+    expect(other?.getAttribute("href")).toBe("/library?fixture=01-library&tab=followed");
   });
 });
 

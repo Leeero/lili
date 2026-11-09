@@ -30,6 +30,8 @@ export const queueColumns = (labels: readonly string[]): TrackTableColumn[] =>
 interface Props {
   title: ReactNode;
   lead: ReactNode;
+  /** 页面内分类 tab（全部 / 音乐视频 / 本地文件），渲染在页头正下方。 */
+  tabs?: ReactNode;
   pills: readonly QueuePill[];
   sectionTitle: ReactNode;
   columns: TrackTableColumn[];
@@ -39,10 +41,33 @@ interface Props {
   onPillPress: (key: string) => void;
   onRowAction: (row: QueueRow, key: string) => void;
   onReorder: (from: number, to: number) => void;
+  /** 真实页面：壳层已标识页面名，去掉页头，只保留操作工具条。 */
+  compact?: boolean;
 }
+
+const QueuePills = ({ pills, onPillPress }: Pick<Props, "pills" | "onPillPress">) => (
+  <>
+    {pills.map(pill =>
+      pill.action ? (
+        <button
+          key={pill.key}
+          type="button"
+          onClick={() => onPillPress(pill.key)}
+          className={pill.kind === "primary" ? "is-primary" : ""}
+        >
+          {pill.label}
+        </button>
+      ) : (
+        <span key={pill.key}>{pill.label}</span>
+      ),
+    )}
+  </>
+);
+
 export const QueueView = ({
   title,
   lead,
+  tabs,
   pills,
   sectionTitle,
   rows,
@@ -50,32 +75,33 @@ export const QueueView = ({
   onPillPress,
   onRowAction,
   onReorder,
+  compact = false,
 }: Props) => (
   <ScrollContainer enableBackToTop className="h-full w-full">
     <div className="queue4188-page">
-      <header className="queue4188-head">
-        <div>
-          <span>当前会话</span>
-          <h1>{title}</h1>
-          <p>{lead}</p>
+      {compact ? (
+        <div className="queue4188-bar">
+          <h1 className="sr-only">{title}</h1>
+          <div className="queue4188-bar-tabs">{tabs}</div>
+          <div className="queue4188-actions">
+            <QueuePills pills={pills} onPillPress={onPillPress} />
+          </div>
         </div>
-        <div className="queue4188-actions">
-          {pills.map(pill =>
-            pill.action ? (
-              <button
-                key={pill.key}
-                type="button"
-                onClick={() => onPillPress(pill.key)}
-                className={pill.kind === "primary" ? "is-primary" : ""}
-              >
-                {pill.label}
-              </button>
-            ) : (
-              <span key={pill.key}>{pill.label}</span>
-            ),
-          )}
-        </div>
-      </header>
+      ) : (
+        <>
+          <header className="queue4188-head">
+            <div>
+              <span>当前会话</span>
+              <h1>{title}</h1>
+              <p>{lead}</p>
+            </div>
+            <div className="queue4188-actions">
+              <QueuePills pills={pills} onPillPress={onPillPress} />
+            </div>
+          </header>
+          {tabs}
+        </>
+      )}
       <section className="queue4188-list" aria-label={String(sectionTitle)}>
         {rows.length ? (
           <>

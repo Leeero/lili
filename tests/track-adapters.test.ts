@@ -1,59 +1,79 @@
 import { describe, expect, test } from "vitest";
 
 import { adaptLocalMusicToTrack } from "@/adapters/track/local";
-import { adaptRankItemToTrack, adaptRegionArchiveToTrack } from "@/adapters/track/recommendation";
+import {
+  adaptNewMusicBannerToTrack,
+  adaptNewMusicToTrack,
+  adaptRankItemToTrack,
+  dedupeTracks,
+} from "@/adapters/track/recommendation";
 import { getTrackCapabilities } from "@/domain/track";
 
 describe("track adapters", () => {
-  test("maps a region recommendation without leaking its DTO shape", () => {
-    const track = adaptRegionArchiveToTrack(
-      {
-        aid: 100,
-        bvid: "BV100",
-        cid: 200,
-        title: "Song",
-        cover: "cover.jpg",
-        duration: 180,
-        pubdate: 1_700_000_000,
-        author: { mid: 9, name: "Artist" },
-        stat: { view: 99 },
-      },
-      "fallback",
-    );
-
-    expect(track).toEqual({
-      id: "bilibili-video:BV100",
-      source: "bilibili-video",
-      title: "Song",
-      cover: "cover.jpg",
-      creator: { id: "9", name: "Artist" },
-      duration: 180,
-      playCount: 99,
-      publishedAt: new Date(1_700_000_000 * 1000).toISOString(),
-      sourceRef: { aid: "100", bvid: "BV100", cid: "200" },
-    });
-  });
-
-  test("prefers related archive metadata for ranking items", () => {
+  test("榜单项按「歌」口径展示，related_archive 只作为播放载体", () => {
     const track = adaptRankItemToTrack(
       {
         id: 1,
-        music_title: "Music title",
+        music_title: "I Met A Boy",
         music_id: "m1",
         music_corner: "",
         cid: "old-cid",
         jump_url: "",
-        author: "Old artist",
+        author: "Mimi Webb",
+        bvid: "BVOLD",
+        album: "Confessions",
+        aid: "10",
+        cover: "music-cover.jpg",
+        score: 212,
+        related_archive: {
+          aid: "20",
+          bvid: "BVNEW",
+          cid: "new-cid",
+          cover: "video-cover.jpg",
+          title: "【MV】【Mimi Webb】「I Met A Boy」",
+          uid: 2,
+          username: "fallinforjulia",
+          vt_display: "",
+          vv_count: 100,
+          is_vt: 0,
+          fname: "MV",
+          duration: 200,
+        },
+      },
+      "rank-1",
+    );
+
+    // 展示是「歌」：歌名 / 歌手 / 专辑 / 音乐封面；播放源是 related_archive 的 bvid/aid/cid。
+    expect(track).toMatchObject({
+      id: "bilibili-video:BVNEW",
+      title: "I Met A Boy",
+      album: "Confessions",
+      cover: "music-cover.jpg",
+      creator: { name: "Mimi Webb" },
+      sourceRef: { aid: "20", bvid: "BVNEW", cid: "new-cid" },
+    });
+  });
+
+  test("榜单项没有歌名/封面时回落到关联稿件", () => {
+    const track = adaptRankItemToTrack(
+      {
+        id: 1,
+        music_title: "",
+        music_id: "m1",
+        music_corner: "",
+        cid: "old-cid",
+        jump_url: "",
+        author: "",
         bvid: "BVOLD",
         album: "",
         aid: "10",
-        cover: "old.jpg",
+        cover: "",
         score: 1,
         related_archive: {
           aid: "20",
           bvid: "BVNEW",
           cid: "new-cid",
-          cover: "new.jpg",
+          cover: "video-cover.jpg",
           title: "Archive title",
           uid: 2,
           username: "Artist",
@@ -64,15 +84,29 @@ describe("track adapters", () => {
           duration: 200,
         },
       },
-      "rank-1",
+      "rank-2",
     );
+
     expect(track).toMatchObject({
-      id: "bilibili-video:BVNEW",
       title: "Archive title",
-      cover: "new.jpg",
-      creator: { id: "2", name: "Artist" },
-      sourceRef: { aid: "20", bvid: "BVNEW", cid: "new-cid" },
+      cover: "video-cover.jpg",
+      creator: { name: "Artist" },
     });
+  });
+
+  test("新歌映射歌名 / 歌手 / 专辑，banner 保持同一稳定身份", () => {
+    const listTrack = adaptNewMusicToTrack(
+      { bvid: "BV1", music_title: "A", author: "歌手", album: "专辑", cover: "a.jpg" },
+      "list",
+    );
+    expect(listTrack).toMatchObject({
+      title: "A",
+      album: "专辑",
+      creator: { name: "歌手" },
+    });
+
+    const bannerTrack = adaptNewMusicBannerToTrack({ bvid: "BV1", archive_title: "A" }, "banner");
+    expect(dedupeTracks([bannerTrack, listTrack])).toEqual([bannerTrack]);
   });
 
   test("maps local files to playable local tracks", () => {
@@ -93,7 +127,10 @@ describe("track adapters", () => {
   });
 
   test("derives actions only from existing backend and local capabilities", () => {
-    const video = adaptRegionArchiveToTrack({ aid: 100, bvid: "BV100", title: "Song", cover: "cover.jpg" }, "fallback");
+    const video = adaptNewMusicToTrack(
+      { bvid: "BV100", aid: "100", music_title: "Song", cover: "cover.jpg" },
+      "fallback",
+    );
     expect(getTrackCapabilities(video, { isLoggedIn: false })).toMatchObject({
       canPlay: true,
       canFavorite: false,
@@ -102,13 +139,37 @@ describe("track adapters", () => {
     });
     expect(getTrackCapabilities(video, { isLoggedIn: true }).canFavorite).toBe(true);
 
-    // 缺 bvid / aid 的分区条目：适配器给的 fallback 身份不足以播放或下载。
-    const unavailable = adaptRegionArchiveToTrack({ title: "No source", cover: "c.jpg" }, "missing");
+    const unavailable = adaptNewMusicToTrack({ music_title: "No source" }, "missing");
     expect(getTrackCapabilities(unavailable, { isLoggedIn: true })).toMatchObject({
       canPlay: false,
       canFavorite: false,
       canDownloadAudio: false,
       canDownloadVideo: false,
+    });
+  });
+
+  test("invalid and collection entries are not playable but keep source link", () => {
+    const base = adaptNewMusicToTrack(
+      { bvid: "BV100", aid: "100", music_title: "Song", cover: "cover.jpg" },
+      "fallback",
+    );
+    const caps = { isLoggedIn: true };
+    // 失效条目：一切播放/入队/下载/收藏关闭，仅可溯源。
+    expect(getTrackCapabilities({ ...base, invalid: true }, caps)).toMatchObject({
+      canPlay: false,
+      canPlayNext: false,
+      canAddToQueue: false,
+      canFavorite: false,
+      canDownloadAudio: false,
+      canDownloadVideo: false,
+      canOpenSource: true,
+    });
+    // 合集条目：同上（不是单曲）。
+    expect(getTrackCapabilities({ ...base, collectionHref: "/collection/1?type=21" }, caps)).toMatchObject({
+      canPlay: false,
+      canAddToQueue: false,
+      canDownloadAudio: false,
+      canOpenSource: true,
     });
   });
 });

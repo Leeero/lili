@@ -12,7 +12,7 @@ import type { DiscoverAlbum, DiscoverFilter, DiscoverHero } from "./discover-vie
  * 屏 07 / 08 夹具的读取与映射。
  *
  * 只有当 URL 携带 `?fixture=07-discover-card` 或 `?fixture=08-discover-list` 时才返回
- * 数据；真实路径（new/music 的两个接口与分区推荐的 `getRegionFeedRcmd`）完全不经过
+ * 数据；真实路径（音乐中心的 new/music 与 comprehensive/web/rank 接口）完全不经过
  * 本文件。这样保真度比对（`verify.py --target app`）拿到的是设计稿第 8 / 9 页的逐字
  * 内容，而日常使用仍然走真实数据 —— 两条路径共享同一个视图模型。
  *

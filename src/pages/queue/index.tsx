@@ -7,6 +7,8 @@ import { getPlayModeList } from "@/common/constants/audio";
 import { buildQueueViewModel } from "@/features/player/queue";
 import { useQueueFixtureData } from "@/features/player/queue-fixture";
 import { QueueView, queueColumns, type QueueRow } from "@/features/player/queue-view";
+import SegmentNav from "@/layout/topbar/segment-nav";
+import { useRouteSegments } from "@/layout/use-route-segments";
 import { useModalStore } from "@/store/modal";
 import { usePlayList } from "@/store/play-list";
 
@@ -21,6 +23,8 @@ const QueuePage = () => {
   const playMode = usePlayList(state => state.playMode);
   const keepPages = usePlayList(state => state.shouldKeepPagesOrderInRandomPlayMode);
   const queue = useMemo(() => buildQueueViewModel(list, playId, nextId), [list, nextId, playId]);
+  const { segments, activeKey } = useRouteSegments();
+  const tabs = segments.length > 0 ? <SegmentNav segments={segments} activeKey={activeKey} /> : null;
   const filter = params.get("source") ?? "all";
   const filtered = useMemo(
     () =>
@@ -77,6 +81,7 @@ const QueuePage = () => {
       <QueueView
         title={fixture.header.title}
         lead={fixture.header.lead}
+        tabs={tabs}
         pills={fixture.filterPills.map((pill, index) => ({ key: String(index), ...pill, action: index < 4 }))}
         sectionTitle={fixture.section.title}
         columns={queueColumns(fixture.section.head)}
@@ -102,11 +107,13 @@ const QueuePage = () => {
     <QueueView
       title="播放队列"
       lead="管理当前播放顺序，支持拖拽排序和分集展开。"
+      tabs={tabs}
       pills={pills}
       sectionTitle={`队列 · ${queue.length} 首`}
       columns={queueColumns(["#", "标题", "来源 · 状态", "时长"])}
       rows={rows}
       currentId={playId}
+      compact
       onPillPress={key => {
         if (key === "play-all") {
           const first = filtered[0];

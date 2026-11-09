@@ -25,8 +25,7 @@ interface PageHeaderProps {
    */
   aside?: ReactNode;
   /**
-   * 右列宽。默认 360（原型 `.page-head` 的第二列），
-   * 第 03 屏稍后播放用 320（`.page-head--narrow`）。
+   * 右列宽。默认 360（原型 `.page-head` 的第二列）。
    */
   asideWidth?: number;
   /**

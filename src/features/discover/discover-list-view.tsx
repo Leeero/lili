@@ -79,15 +79,19 @@ export interface DiscoverListViewProps {
   lead: ReactNode;
   filters: DiscoverFilter[];
   /**
+   * 语义筛选控件。**传了它就用它替代 `filters` 的默认渲染** —— 理由与
+   * `DiscoverViewProps.filterControl` 相同：「音乐分区 / 新碟与新歌」是互斥二选一
+   * 的数据源，该用分段控件表达，而不是一排并列药丸。夹具路径不传（那一屏的
+   * 药丸是静态标记，不是互斥选项）。
+   */
+  filterControl?: ReactNode;
+  /**
    * 内容区。**传了它就用它替代曲目表那一整段。**
    *
-   * 存在的理由与 `DiscoverViewProps.content` 相同：加载 / 失败 / 空态时**页头必须
-   * 常驻**。让页面在 loading / error / empty 时整个早退成 `<PageState>` 会把页头
-   * 连同筛选条一起卸载重建 —— 点"重新加载"时会闪一下。骨架常驻、只有数据区换状态
-   * 才是对的。
-   *
-   * 注：`filterControl` / `viewSwitcher` 两个槽位已随 2026-10-12 的产品决策移除，
-   * 详见 `DiscoverHeading`。
+   * 存在的理由与 `DiscoverViewProps.content` 相同：切换数据源时**页面框必须常驻**。
+   * 让页面在 loading / error / empty 时整个早退成 `<PageState>` 会把数据源控件一起
+   * 卸载重建 —— 每次点击闪一下，且刚点下的那一档会在视觉上"消失"半秒。
+   * 骨架常驻、只有数据区换状态才是对的。
    */
   content?: ReactNode;
   sectionTitle: string;
@@ -121,6 +125,7 @@ export const DiscoverListView = ({
   title,
   lead,
   filters,
+  filterControl,
   content,
   sectionTitle,
   columns,
@@ -135,11 +140,17 @@ export const DiscoverListView = ({
         宽度，最右列（本屏是右对齐的时长列）会被压掉 10px。 */}
     <div className="w-full pr-[14px]">
       {/* 页头与卡片分支**同一个组件**（`DiscoverHeading`）。 */}
-      <DiscoverHeading title={title} lead={lead} filters={filters} onPillPress={onPillPress} />
+      <DiscoverHeading
+        title={title}
+        lead={lead}
+        filters={filters}
+        filterControl={filterControl}
+        onPillPress={onPillPress}
+      />
 
       {/*
         页头之后是内容区。**给了 `content` 就整段替换**（曲目表不渲染），这样加载 /
-        失败 / 空态只换这一块，页头始终挂载 —— 点"重新加载"时不会闪。
+        失败 / 空态只换这一块，页头与两个分段控件始终挂载 —— 切换数据源时不会闪。
         详见 `DiscoverListViewProps.content`。
       */}
       {content ?? (

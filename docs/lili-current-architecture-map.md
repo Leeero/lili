@@ -33,7 +33,7 @@ React 页面 / 组件
 
 | 领域 | 现有 Service | 主要调用方 | 阶段 1 适配目标 |
 | --- | --- | --- | --- |
-| 推荐 | `web-interface-region-feed-rcmd`、`music-comprehensive-web-rank`（`web-interface-new-music*` 已随 2026-10-12 的「新碟与新歌」档位移除） | 发现音乐页 | `Track[]` |
+| 推荐 | `web-interface-new-music*`、`web-interface-region-feed-rcmd`、`music-comprehensive-web-rank` | 音乐推荐页 | `Track[]` / 推荐区块 |
 | 搜索 | `main-suggest`、`web-interface-search-type`、`web-interface-history-search` | 顶栏搜索、搜索结果页 | `SearchResult<Track/Creator>` |
 | 播放 | `web-interface-view`、`player-pagelist`、`player-playurl`、`audio-song-info`、`audio-web-url` | 播放 Store、列表组件 | `Track`、`TrackPart`、播放源 |
 | 收藏夹 | `fav-folder-*`、`fav-resource-*` | 侧栏、收藏夹页面、编辑弹窗 | `Playlist`、分页内容、PlaylistActions |

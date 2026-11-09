@@ -6,7 +6,7 @@
     "title": "本地音乐",
     "lead": "3 个目录 · 1,284 个文件 · 8 种可扫描格式（mp3 / flac / wav / m4a / aac / ogg / wma / aiff）"
   },
-  "filterPills": ["全部播放", "随机播放", "重新扫描", "从应用删除文件 · 二次确认"],
+  "filterPills": ["全部播放", "随机播放", "重新扫描", "从应用删除文件"],
   "cards": [
     {
       "id": "fixture-local-1",

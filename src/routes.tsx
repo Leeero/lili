@@ -8,8 +8,8 @@ import NotFound from "./pages/not-found";
 
 const DesignSystemPage = lazy(() => import("./pages/design-system"));
 const DownloadList = lazy(() => import("./pages/download-list"));
+const Chart = lazy(() => import("./pages/chart"));
 const History = lazy(() => import("./pages/history"));
-const Later = lazy(() => import("./pages/later"));
 const Library = lazy(() => import("./pages/library"));
 const LocalMusicPage = lazy(() => import("./pages/local-music"));
 const MiniPlayer = lazy(() => import("./pages/mini-player"));
@@ -18,6 +18,7 @@ const Queue = lazy(() => import("./pages/queue"));
 const Search = lazy(() => import("./pages/search"));
 const Settings = lazy(() => import("./pages/settings"));
 const SocialPage = lazy(() => import("./pages/social"));
+const TrackDetail = lazy(() => import("./pages/track-detail"));
 const UserProfile = lazy(() => import("./pages/user-profile"));
 const Folder = lazy(() => import("./pages/video-collection"));
 
@@ -31,12 +32,12 @@ const routes: RouteObject[] = [
         element: <MusicRecommend />,
       },
       {
-        path: "library",
-        element: <Library />,
+        path: "chart",
+        element: <Chart />,
       },
       {
-        path: "later",
-        element: <Later />,
+        path: "library",
+        element: <Library />,
       },
       {
         path: "history",
@@ -49,6 +50,10 @@ const routes: RouteObject[] = [
       {
         path: "collection/:id",
         element: <Folder />,
+      },
+      {
+        path: "track/:bvid",
+        element: <TrackDetail />,
       },
       {
         path: "user/:id",

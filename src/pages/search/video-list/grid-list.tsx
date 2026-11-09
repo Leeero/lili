@@ -1,13 +1,14 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
+import { useNavigate } from "react-router";
 
 import type { Track } from "@/domain/track";
 
 import { toPlayItem } from "@/adapters/track/actions";
-import MusicCard from "@/components/music-card";
 import VirtualGridPageList from "@/components/virtual-grid-page-list";
 import { usePlayList } from "@/store/play-list";
 
 import { getContextMenus } from "./menu";
+import SearchVideoCard from "./search-video-card";
 
 interface GridListProps {
   items: Track[];
@@ -18,30 +19,44 @@ interface GridListProps {
   onLoadMore: () => void;
 }
 
+const CARD_ROW_HEIGHT = 280;
+
 const GridList: React.FC<GridListProps> = ({ items, getScrollElement, onMenuAction, loading, hasMore, onLoadMore }) => {
+  const navigate = useNavigate();
+  const currentBvid = usePlayList(state => state.list.find(item => item.id === state.playId)?.bvid);
+  const isPlaying = usePlayList(state => state.isPlaying);
+  const menus = useMemo(() => getContextMenus(), []);
+
+  const handlePlay = useCallback(
+    (item: Track) => {
+      if (item.sourceRef.bvid && currentBvid === item.sourceRef.bvid) {
+        usePlayList.getState().togglePlay();
+        return;
+      }
+      void usePlayList.getState().play(toPlayItem(item));
+    },
+    [currentBvid],
+  );
+
   const renderGridItem = useCallback(
     (item: Track) => {
+      const isCurrent = Boolean(item.sourceRef.bvid) && item.sourceRef.bvid === currentBvid;
       return (
-        <MusicCard
+        <SearchVideoCard
           key={item.id}
-          title={item.title}
-          cover={item.cover || ""}
-          playCount={item.playCount}
-          duration={item.duration}
-          ownerName={item.creator?.name}
-          ownerMid={item.creator?.id ? Number(item.creator.id) || undefined : undefined}
-          time={item.publishedAt ? Date.parse(item.publishedAt) / 1000 : undefined}
-          menus={getContextMenus()}
-          onMenuAction={key => {
-            onMenuAction(key, item);
+          item={item}
+          isCurrent={isCurrent}
+          isPlaying={isCurrent && isPlaying}
+          menus={menus}
+          onOpen={() => {
+            if (item.sourceRef.bvid) navigate(`/track/${item.sourceRef.bvid}`);
           }}
-          onPress={() => {
-            usePlayList.getState().play(toPlayItem(item));
-          }}
+          onPlay={() => handlePlay(item)}
+          onAction={key => onMenuAction(key, item)}
         />
       );
     },
-    [onMenuAction],
+    [currentBvid, handlePlay, isPlaying, menus, navigate, onMenuAction],
   );
 
   return (
@@ -53,6 +68,7 @@ const GridList: React.FC<GridListProps> = ({ items, getScrollElement, onMenuActi
       loading={loading}
       hasMore={hasMore}
       onLoadMore={onLoadMore}
+      rowHeight={CARD_ROW_HEIGHT}
     />
   );
 };

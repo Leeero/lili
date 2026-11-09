@@ -8,6 +8,7 @@ export const toPlayItem = (track: Track): PlayItem => ({
   audioUrl: track.sourceRef.audioUrl,
   title: track.title,
   bvid: track.sourceRef.bvid,
+  cid: track.sourceRef.cid,
   sid: track.sourceRef.sid,
   cover: track.cover,
   ownerName: track.creator?.name,

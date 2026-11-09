@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { RiArrowUpSLine } from "@remixicon/react";
@@ -6,6 +6,7 @@ import clsx from "classnames";
 
 import MusicFavButton from "@/components/music-fav-button";
 import MusicMoreMenu from "@/components/music-more-menu";
+import MusicThumbButton from "@/components/music-thumb-button";
 import { useNowPlaying } from "@/features/player/now-playing";
 import { usePlayerActions } from "@/features/player/use-player-actions";
 import { useUser } from "@/store/user";
@@ -38,7 +39,24 @@ const LeftControl = () => {
   const navigate = useNavigate();
   const user = useUser(state => state.user);
   const { openNowPlaying } = usePlayerActions();
-  const { title, sub, ownerClickable, ownerMid, hasMultiPart, sourceIsLocal, cover, badgeText } = useNowPlaying();
+  const { title, sub, ownerClickable, ownerMid, hasMultiPart, isVideo, sourceIsLocal, cover, badgeText } =
+    useNowPlaying();
+
+  // 标题跑马灯：仅当单行标题超出容器宽度时才滚动，短标题保持静态省略。
+  const titleContainerRef = useRef<HTMLSpanElement>(null);
+  const titleTextRef = useRef<HTMLSpanElement>(null);
+  const [titleOverflow, setTitleOverflow] = useState(false);
+
+  useEffect(() => {
+    const container = titleContainerRef.current;
+    const text = titleTextRef.current;
+    if (!container || !text) return;
+
+    const measure = () => setTitleOverflow(text.scrollWidth > container.clientWidth);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [title]);
 
   return (
     <div className="flex h-full min-w-0 items-center gap-[var(--lili-playbar-meta-gap)] overflow-hidden">
@@ -64,10 +82,15 @@ const LeftControl = () => {
 
       <div className="flex min-w-0 flex-1 flex-col items-start gap-[var(--lili-playbar-title-gap)] overflow-hidden">
         <span
+          ref={titleContainerRef}
           title={title}
-          className="block w-full max-w-full truncate text-[length:var(--lili-type-list-title-size)] font-semibold text-[rgb(var(--lili-text-primary))]"
+          data-overflow={titleOverflow || undefined}
+          className="shell4188-title-marquee block w-full max-w-full text-[length:var(--lili-type-list-title-size)] font-semibold text-[rgb(var(--lili-text-primary))]"
         >
-          {title}
+          <span className="shell4188-title-marquee-track">
+            <span ref={titleTextRef}>{title}</span>
+            {titleOverflow && <span aria-hidden="true">{title}</span>}
+          </span>
         </span>
         <span className="flex w-full min-w-0 items-center gap-[var(--lili-playbar-sub-gap)]">
           <span
@@ -84,6 +107,7 @@ const LeftControl = () => {
             {sub}
           </span>
           {badgeText && <Tag variant="quality">{badgeText}</Tag>}
+          {title && <Tag variant="plain">{sourceIsLocal ? "本地" : "B站"}</Tag>}
         </span>
       </div>
 
@@ -100,6 +124,7 @@ const LeftControl = () => {
       */}
       <div className="hidden flex-none items-center gap-0.5 min-[1600px]:flex">
         {hasMultiPart && <PageListDrawer />}
+        {Boolean(user?.isLogin) && !sourceIsLocal && isVideo && <MusicThumbButton />}
         {Boolean(user?.isLogin) && !sourceIsLocal && <MusicFavButton />}
         {!sourceIsLocal && <MusicMoreMenu />}
       </div>

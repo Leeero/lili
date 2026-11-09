@@ -86,6 +86,20 @@ const api: ElectronAPI = {
 
     return () => ipcRenderer.removeListener(channel.player.command, handler);
   },
+  // 订阅主进程下发的系统电源事件（锁屏/解锁/休眠/唤醒），驱动「自动暂停」
+  onSystemPowerEvent: cb => {
+    const handler = (_: Electron.IpcRendererEvent, payload: SystemPowerEvent) => {
+      try {
+        cb(payload);
+      } catch (error) {
+        console.error("[preload] system power event callback failed:", error);
+      }
+    };
+
+    ipcRenderer.on(channel.player.systemEvent, handler);
+
+    return () => ipcRenderer.removeListener(channel.player.systemEvent, handler);
+  },
   // 获取应用版本
   getAppVersion: () => ipcRenderer.invoke(channel.app.getVersion),
   isDev: () => ipcRenderer.invoke(channel.app.isDev),

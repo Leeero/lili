@@ -3,15 +3,13 @@ import { useNavigate, useSearchParams } from "react-router";
 
 import { countDownloadStatuses } from "@/features/downloads/model";
 import { useLibraryFixtureData } from "@/features/library/fixture";
+import { buildLibraryTileGroups, filterVisibleFavorites } from "@/features/library/grouping";
 import { LibraryView } from "@/features/library/library-view";
-import {
-  adaptFavoriteItemToTile,
-  adaptLocalDirToTile,
-  buildLibraryOverviewLines,
-  type LibraryTile,
-} from "@/features/library/model";
+import { buildLibraryOverviewLines, type LibraryTile } from "@/features/library/model";
 import { executePlaylistBulkAction } from "@/features/playlist/bulk-actions";
 import { loadAllPlaylistTracks, type PlaylistTrackSource } from "@/features/playlist/load-tracks";
+import SegmentNav from "@/layout/topbar/segment-nav";
+import { useRouteSegments } from "@/layout/use-route-segments";
 import { useFavoritesStore } from "@/store/favorite";
 import { openLoginModal } from "@/store/login-modal";
 import { useSettings } from "@/store/settings";
@@ -34,15 +32,21 @@ const TRACK_SOURCES = new Set<PlaylistTrackSource>(["favorite-folder", "season",
 const Library = () => {
   const fixture = useLibraryFixtureData();
   const [searchParams] = useSearchParams();
-  const libraryTab = searchParams.get("tab") === "collected" ? "collected" : "created";
+  const tabParam = searchParams.get("tab");
+  const libraryTab = tabParam === "followed" ? "followed" : "created";
   const user = useUser(state => state.user);
   const createdFavorites = useFavoritesStore(state => state.createdFavorites);
   const collectedFavorites = useFavoritesStore(state => state.collectedFavorites);
+  const seasonSeries = useFavoritesStore(state => state.seasonSeries);
   const updateCreatedFavorites = useFavoritesStore(state => state.updateCreatedFavorites);
   const updateCollectedFavorites = useFavoritesStore(state => state.updateCollectedFavorites);
-  const localMusicDirs = useSettings(state => state.localMusicDirs);
+  const updateSeasonSeries = useFavoritesStore(state => state.updateSeasonSeries);
+  const hiddenLibraryKeys = useSettings(state => state.hiddenLibraryKeys);
   const audioQuality = useSettings(state => state.audioQuality);
   const navigate = useNavigate();
+  const { segments: librarySegments, activeKey: libraryActiveKey } = useRouteSegments();
+  const libraryTabs =
+    librarySegments.length > 0 ? <SegmentNav segments={librarySegments} activeKey={libraryActiveKey} /> : null;
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
@@ -53,13 +57,17 @@ const Library = () => {
     setLoading(true);
     setLoadError(false);
     try {
-      await Promise.all([updateCreatedFavorites(user.mid), updateCollectedFavorites(user.mid)]);
+      await Promise.all([
+        updateCreatedFavorites(user.mid),
+        updateCollectedFavorites(user.mid),
+        updateSeasonSeries(user.mid),
+      ]);
     } catch {
       setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, [updateCollectedFavorites, updateCreatedFavorites, user?.mid]);
+  }, [updateCollectedFavorites, updateCreatedFavorites, updateSeasonSeries, user?.mid]);
 
   useEffect(() => {
     if (fixture) return; // 夹具模式不触网：比对需要确定性。
@@ -134,6 +142,7 @@ const Library = () => {
       <>
         <LibraryView
           lead={`${total} 个播放列表 · ${overview.tracks} 首 · 我创建 ${created.length} / 我收藏 ${collected.length}`}
+          tabs={libraryTabs}
           overviewLines={buildLibraryOverviewLines({
             createdCount: created.length,
             collectedCount: collected.length,
@@ -144,9 +153,8 @@ const Library = () => {
             downloadsDone: overview.downloadsDone,
             downloadsActive: overview.downloadsActive,
           })}
-          qualityPillText={`音质偏好 · ${overview.qualityLabel}`}
           createdTiles={created}
-          collectedTiles={collected}
+          followedTiles={collected}
           demoActionKeys={searchParams.get("preview") === "4188" ? [] : demoActionKeys}
           onTilePress={() => {
             /* 夹具模式下不跳转：比对需要画面稳定。 */
@@ -167,6 +175,8 @@ const Library = () => {
     );
   }
 
+  // 未登录降级：收藏夹 / 合集需登录态，直接落到登录引导。
+  // 本地目录在侧栏「本地音乐」有独立入口，不在库页重复展示。
   if (!user?.isLogin) {
     return (
       <PageState
@@ -179,53 +189,83 @@ const Library = () => {
     );
   }
 
-  const createdTiles: LibraryTile[] = [
-    ...createdFavorites.map(item => adaptFavoriteItemToTile(item, true)),
-    ...localMusicDirs.map(dir => adaptLocalDirToTile(dir)),
-  ];
-  const collectedTiles: LibraryTile[] = collectedFavorites.map(item => adaptFavoriteItemToTile(item, false));
-  const trackTotal = [...createdFavorites, ...collectedFavorites].reduce(
-    (sum, item) => sum + (item.trackCount ?? 0),
-    0,
-  );
-  const hasTrackCounts = [...createdFavorites, ...collectedFavorites].some(item => item.trackCount !== undefined);
+  // 两组拆分与显隐过滤的真源在 features/library/grouping —— 设置页的
+  // 「我的音乐显示」共用同一份，设置里列出的条目就是这里能出现的瓦片。
+  const visibleCreatedFavorites = filterVisibleFavorites(createdFavorites, hiddenLibraryKeys ?? []);
+  const visibleCollectedFavorites = filterVisibleFavorites(collectedFavorites, hiddenLibraryKeys ?? []);
+  const visibleSeasonSeries = filterVisibleFavorites(seasonSeries, hiddenLibraryKeys ?? []);
+  const groups = buildLibraryTileGroups(visibleCreatedFavorites, visibleCollectedFavorites, visibleSeasonSeries, []);
+  const createdTiles: LibraryTile[] = groups.created;
+  const followedTiles = groups.followed;
+  const allFavorites = [...visibleCreatedFavorites, ...visibleCollectedFavorites, ...visibleSeasonSeries];
+  const trackTotal = allFavorites.reduce((sum, item) => sum + (item.trackCount ?? 0), 0);
+  const hasTrackCounts = allFavorites.some(item => item.trackCount !== undefined);
 
   const overviewLines = buildLibraryOverviewLines({
-    createdCount: createdFavorites.length,
-    collectedCount: collectedFavorites.length,
+    createdCount: visibleCreatedFavorites.length + visibleSeasonSeries.length,
+    collectedCount: visibleCollectedFavorites.length,
     qualityLabel: QUALITY_LABELS[audioQuality] ?? audioQuality,
-    localDirs: localMusicDirs.length,
+    localDirs: undefined,
     tracks: hasTrackCounts ? trackTotal : undefined,
     downloadsDone: downloadCounts?.done,
     downloadsActive: downloadCounts?.active,
   });
 
+  const hasAnyTiles = createdTiles.length + followedTiles.length > 0;
+  // 工具条动作作用于当前 tab 的列表：在「我追的」上点全部播放，不能去播「我创建的」。
+  const activeTiles = libraryTab === "created" ? createdTiles : followedTiles;
+  const otherTab = libraryTab === "created" ? "followed" : "created";
+  const emptyState =
+    activeTiles.length === 0 ? (
+      <PageState
+        kind="empty"
+        title="当前分类暂无内容"
+        description="另一个分类里还有内容"
+        actionLabel={otherTab === "created" ? "查看我创建的" : "查看我追的"}
+        onAction={() => navigate(`/library?tab=${otherTab}`)}
+      />
+    ) : undefined;
+  // 收藏内容还在、只是被设置全部隐去：与「确实没有收藏」是两种状态，
+  // 给同一句「暂无收藏内容」会把人指向错误的方向（去 B 站收藏更多）。
+  const allHidden = createdFavorites.length + collectedFavorites.length + seasonSeries.length > 0 && !hasAnyTiles;
+
   return (
     <>
-      {loading && !createdFavorites.length && !collectedFavorites.length ? (
+      {loading && !hasAnyTiles ? (
         <PageState kind="loading" className="min-h-[320px]" />
       ) : loadError ? (
         <PageState kind="error" actionLabel="重新加载" onAction={() => void refresh()} />
-      ) : !createdFavorites.length && !collectedFavorites.length ? (
+      ) : allHidden ? (
+        <PageState
+          kind="empty"
+          title="收藏内容已全部隐藏"
+          description="在「设置 · 常规 · 我的音乐显示」里重新勾选要展示的条目"
+          actionLabel="去设置"
+          onAction={() => navigate("/settings?tab=general")}
+        />
+      ) : !hasAnyTiles ? (
         <PageState kind="empty" title="暂无收藏内容" description="在 B 站创建或收藏的播放列表会显示在这里" />
       ) : (
         <>
           <LibraryView
+            // lead 保留曲目总数与创建/追的拆分；概览卡片已移除，这里不再有重复来源。
             lead={
               hasTrackCounts
-                ? `${createdTiles.length + collectedTiles.length} 个播放列表 · ${trackTotal} 首 · 我创建 ${createdFavorites.length} / 我收藏 ${collectedFavorites.length}`
-                : `${createdTiles.length + collectedTiles.length} 个播放列表 · 我创建 ${createdFavorites.length} / 我收藏 ${collectedFavorites.length}`
+                ? `${trackTotal} 首 · 我创建 ${visibleCreatedFavorites.length + visibleSeasonSeries.length} / 我追 ${visibleCollectedFavorites.length}`
+                : `我创建 ${visibleCreatedFavorites.length + visibleSeasonSeries.length} / 我追 ${visibleCollectedFavorites.length}`
             }
+            tabs={libraryTabs}
             overviewLines={overviewLines}
-            qualityPillText={`音质偏好 · ${QUALITY_LABELS[audioQuality] ?? audioQuality}`}
             createdTiles={libraryTab === "created" ? createdTiles : []}
-            collectedTiles={libraryTab === "collected" ? collectedTiles : []}
+            followedTiles={libraryTab === "followed" ? followedTiles : []}
             demoActionKeys={[]}
             onTilePress={tile => navigate(tile.href)}
             onTileAction={(tile, key) => void onTileAction(tile, key)}
-            onPlayAll={() => void playTiles(createdTiles, false)}
-            onShuffleAll={() => void playTiles(createdTiles, true)}
+            onPlayAll={() => void playTiles(activeTiles, false)}
+            onShuffleAll={() => void playTiles(activeTiles, true)}
             bulkPending={bulkPending}
+            emptyState={emptyState}
+            compact
           />
         </>
       )}

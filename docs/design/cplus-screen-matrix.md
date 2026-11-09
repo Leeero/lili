@@ -1,6 +1,6 @@
 # C+ 逐屏施工矩阵
 
-> 12 屏的施工契约。每屏开工前读这一行，收工时逐项打勾。数值真值在 [`cplus-spec-lock.json`](./cplus-spec-lock.json)，本文只写**怎么改**与**怎么算做完**。
+> 11 屏的施工契约。每屏开工前读这一行，收工时逐项打勾。数值真值在 [`cplus-spec-lock.json`](./cplus-spec-lock.json)，本文只写**怎么改**与**怎么算做完**。
 >
 > 状态图例：`待开工` → `施工中` → `已验收（保真达标）` → `已切换路由` → `旧实现已删除`。总表用的是其中一列，口径见下。
 
@@ -10,7 +10,6 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 01 | 2 | 我的音乐库 | `/library` | `pages/library` + `features/library/model` | 卡片列表 → 满幅瓦片库 | 已验收 |
 | 02 | 3 | 我的收藏 · 详情 | `/collection/:id` | `features/playlist/playlist-detail.tsx`、`pages/video-collection` | 统一壳层，去三分支 | 已验收 |
-| 03 | 4 | 稍后播放 | `/later` | `pages/later` | 视觉重写 | 旧实现已删除 |
 | 04 | 5 | 本地音乐 | `/local-music` | `pages/local-music` | 增加格式卡网格 | 旧实现已删除 |
 | 05 | 6 | 下载管理 | `/download-list` | `pages/download-list` | 视觉重写 + 内联进度条 | 旧实现已删除 |
 | 06 | 7 | 搜索结果 | `/search` | `pages/search` | 大搜索框 + 双 Tab | 已验收 |
@@ -38,7 +37,7 @@
 
 1. 页头为两栏 `PageHeader`：左列 H1「我的音乐库」+ 导语 + 筛选条；右列 `InfoPanel`（库概览 4 条）。右栏宽 320。
 2. 导语比常规低 6px（`leadOffset="low"`）。
-3. 筛选条 `gap="tight"`（12px），三枚药丸：全部播放（primary）/ 随机播放（secondary）/ 音质偏好 · 无损优先（8 档）（neutral）。
+3. 筛选条 `gap="tight"`（12px），两枚药丸：全部播放（primary）/ 随机播放（secondary）。设计稿原第三枚「音质偏好 · 无损优先（8 档）」已移除（见 spec-lock 1.3.37）：它是纯展示 `<span>` 却长得与可点按钮一致，信息又与库概览卡片重复，全局音质设置的唯一入口收敛到设置页。
 4. 两个 `Section`：`我创建的 · N 个播放列表`、`我收藏的 · N 个播放列表`。分组间距 27px。
 5. 瓦片网格：每行 4 枚，瓦片 16:9 封面 + 来源徽标（收藏夹 / 合集 / 系列 / 本地目录）+ 标题 + 元信息。
 6. 第 3 枚瓦片演示玻璃操作带：`播放 | · | 下一首 | 入队 | 收藏 | 下载音频`（悬停或选中时露出）。
@@ -52,7 +51,7 @@
 | 瓦片跳转            | `features/library/model.ts` → `getFavoriteItemHref`           |
 | 操作带 5 项         | `features/track/actions.ts`                                   |
 | 库概览 4 条         | `useFavoritesStore` + `useSettings`（音质偏好）+ 下载任务统计 |
-| 音质偏好药丸        | `settings.audioQuality`                                       |
+| 音质偏好设置        | `settings.audioQuality`（入口在设置页；库页概览卡片只读展示） |
 
 **验收**
 
@@ -87,23 +86,6 @@
 | 编辑 / 删除 / 封面上传         | `components/favorites-edit-modal`                                             |
 
 **验收**：`h1Top=122`、`leadTop=192`、`filterTop=236`、`noteTop=653`；弹层矩形 ±2px。
-
----
-
-## 03 · 稍后播放　`/later`
-
-- **设计页**：4　**原型**：`screens/03-watch-later.html`
-- **现状**：`pages/later`
-
-**复刻要点**
-
-1. 页头 `asideWidth={320}`（`page-head--narrow`），右栏 `InfoPanel` 展示同步状态：`上次同步 · 2 分钟前` / `37 条 · 已看 12 条`。
-2. 顶栏分段：`全部 | 近 7 天 | 近 30 天`。
-3. 曲目表第四列为观看进度（百分比 + 细条），第五列时长。
-4. 注解带 `note`（top 653）。
-5. 必须保留「同步来源为 B 站稍后再看」的说明文案。
-
-> **屏 03 收口（P4-S1，spec-lock 1.3.27，2026-09-29）** —— 页面装配与真实路径已切换到 `LaterView`：`getHistoryToViewList` 的分页、关键词、时间范围继续保留，条目经 `adaptWatchLaterToTrack` 汇入统一 Track Action API；顶栏「全部 / 近 7 天 / 近 30 天」已接线，旧 `grid-list / list / search / menu` 四个实现已删除。`--target app` **PASS**：L1 硬锚点 4/4、结构与播放栏探针全绿、`list / right / note` 内容带均 100%，平均亮度差 **8.11**。对照图见 [`evidence/screen03-design-vs-render-1.3.27.png`](./evidence/screen03-design-vs-render-1.3.27.png)。
 
 ---
 
@@ -146,6 +128,8 @@
 **能力对齐**：暂停 / 继续 / 重试 / 取消 / 清空 / 定位文件 —— 全部走现有 IPC；清空全部必须二次确认。
 
 > **屏 05 收口（P4-S3，spec-lock 1.3.29，2026-09-29）** —— 夹具与真实下载队列共用 `DownloadsView`；`/download-list` 顶栏分段已接入全部 / 音频 / 视频真实筛选。五枚页面操作和单任务右键菜单完整映射现有 Electron IPC，清空全部与删除进行中任务保留二次确认；旧 HeroUI 表格及 `actions / progress / status-desc` 三个分散实现已删除。`--target app` **PASS**：L1/L2 全绿，`list / right / note` 内容带均 100%，平均亮度差 **7.30**。对照图见 [`evidence/screen05-design-vs-render-1.3.29.png`](./evidence/screen05-design-vs-render-1.3.29.png)。
+
+> **屏 05 审查修复（spec-lock 1.3.38，2026-10-16）** —— 六项交互 / 视觉修复：① 行操作带门控改由 model 层 `capabilities` 驱动（旧实现按 `status` 展示文案 `includes` 匹配，`canOpen` 的 `savePath` 条件查不到，会出现点击被静默拦截的假按钮）；② 危险按钮「清空记录」**常态**红边红字（原 `:hover` 才变红，扫视时无从预警）；③「· 二次确认」后缀从按钮名移除（确认由弹窗承担；屏 04「从应用删除文件」同款订正）；④ 主按钮路径尾巴截成末段 `…/Downloads`（完整路径由 `title` 悬停揭示，修操作组换行）；⑤ 空态分「全空 / 筛选空」两态 + `PageState` 占位；⑥ 布局开关从 `note` 的有无改为显式 `variant="card" | "table"`。夹具任务补 `rawStatus` 字段（TS+JSON 同步）供 fixture 层计算同一份 capabilities。
 
 ---
 

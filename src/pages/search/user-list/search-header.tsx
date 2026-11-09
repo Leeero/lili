@@ -1,39 +1,35 @@
-import React from "react";
-
-import { Tab, Tabs } from "@heroui/react";
+import { useSearchSegments } from "@/store/search-segments";
 
 import type { UserSortKey } from "./utils";
+
+import { SortDropdown } from "../sort-dropdown";
 
 interface SearchHeaderProps {
   sortKey: UserSortKey;
   onSortChange: (key: UserSortKey) => void;
 }
 
-const sortOptions: { label: string; value: UserSortKey }[] = [
+const SORT_OPTIONS: { label: string; value: UserSortKey }[] = [
   { label: "默认排序", value: "default" },
-  { label: "粉丝数由高到低", value: "fans_desc" },
-  { label: "粉丝数由低到高", value: "fans_asc" },
-  { label: "Lv等级由高到低", value: "level_desc" },
-  { label: "Lv等级由低到高", value: "level_asc" },
+  { label: "粉丝最多", value: "fans_desc" },
+  { label: "粉丝最少", value: "fans_asc" },
+  { label: "等级最高", value: "level_desc" },
+  { label: "等级最低", value: "level_asc" },
 ];
 
+/** 创作者工具条：与音乐视频同一套吸顶工具条和排序下拉，只换标题与排序项。 */
 export default function SearchHeader({ sortKey, onSortChange }: SearchHeaderProps) {
+  const creatorCount = useSearchSegments(state => state.creatorCount);
+
   return (
-    <div className="mb-4 flex items-center justify-between">
-      <Tabs
-        aria-label="创作者排序"
-        variant="light"
-        radius="md"
-        classNames={{
-          cursor: "rounded-medium",
-        }}
-        selectedKey={sortKey}
-        onSelectionChange={key => onSortChange(key as UserSortKey)}
-      >
-        {sortOptions.map(option => (
-          <Tab key={option.value} title={option.label} />
-        ))}
-      </Tabs>
+    <div className="search4188-toolbar">
+      <div className="search4188-toolbar-title">
+        <h2>创作者</h2>
+        {creatorCount !== null && <span className="search4188-section-count">{creatorCount}</span>}
+      </div>
+      <div className="search4188-toolbar-controls">
+        <SortDropdown value={sortKey} options={SORT_OPTIONS} onChange={onSortChange} label="创作者排序" />
+      </div>
     </div>
   );
 }

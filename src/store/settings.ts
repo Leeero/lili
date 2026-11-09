@@ -65,7 +65,7 @@ export const useSettings = create<AppSettings & SettingsActions>()(
           backgroundColor: state.backgroundColor,
           borderRadius: state.borderRadius,
           audioQuality: state.audioQuality,
-          hiddenMenuKeys: state.hiddenMenuKeys,
+          hiddenLibraryKeys: state.hiddenLibraryKeys,
           displayMode: state.displayMode,
           ffmpegPath: state.ffmpegPath,
           themeMode: state.themeMode,
@@ -76,6 +76,9 @@ export const useSettings = create<AppSettings & SettingsActions>()(
           sideMenuWidth: state.sideMenuWidth,
           sideMenuCollectionFolded: state.sideMenuCollectionFolded,
           reportPlayHistory: state.reportPlayHistory,
+          autoPauseOnLock: state.autoPauseOnLock,
+          autoPauseOnAudioDeviceLost: state.autoPauseOnAudioDeviceLost,
+          autoPauseResumeOnUnlock: state.autoPauseResumeOnUnlock,
           localMusicDirs: state.localMusicDirs,
         };
       },

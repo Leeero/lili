@@ -17,17 +17,6 @@
 }
 
 /**
- * 无页头形态（真实路径的发现音乐）。
- *
- * 页头缺席后，内容网格紧贴壳层 content 区的 8px 上内边距，卡片会像"顶"在顶栏下沿。
- * 补 24px 让首行卡片有呼吸，同时**不动有页头的分支** —— 夹具屏 07 / 08 是设计稿
- * 存档，其首屏锚点由 `DISCOVER_HEAD_RHYTHM` 与各自的节距规则闭合，不能被这里改。
- */
-.lili-theme-4188 .discover4188.is-headless {
-  padding-top: 24px;
-}
-
-/**
  * 页头样式**不在这里**。两个展示分支共用 `DiscoverHeading`（走 `PageHeader` +
  * `FilterBar`），几何由 `discover-heading.tsx` 的 `DISCOVER_HEAD_RHYTHM` 下发，
  * 因此本文件不再有任何 `.discover4188-heading*` / `-filters` 规则 —— 页头只有
@@ -37,13 +26,33 @@
 
 .discover4188-hero {
   position: relative;
-  height: clamp(260px, 34vw, 410px);
-  overflow: hidden;
-  border-radius: var(--lili-4188-radius-xl);
+  display: grid;
+
+  /* 原型 .hero-card：左 16:9 封面 + 中正文 + 右圆形播放键，不再做全宽裁剪 banner。 */
+  grid-template-columns: 353px minmax(0, 1fr) 56px;
+  align-items: center;
+  gap: 20px;
+  padding: 17px 16px;
+  border-radius: var(--lili-4188-radius-panel);
   background: var(--lili-4188-surface);
+  border: 1px solid var(--lili-4188-border);
+  margin-bottom: 34px;
+}
+
+.discover4188-hero-art {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--lili-4188-radius-card);
+  overflow: hidden;
+  background: var(--lili-4188-surface-elevated);
   background-image: var(--discover-art);
   background-size: cover;
-  margin-bottom: 34px;
+}
+
+.discover4188-hero-art > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .discover4188-hero-badge,
@@ -58,39 +67,52 @@
 }
 
 .discover4188-hero-badge {
-  top: 14px;
-  left: 14px;
+  top: 12px;
+  left: 12px;
 }
 
 .discover4188-hero-ratio {
-  bottom: 14px;
-  right: 14px;
+  left: 14px;
+  bottom: 12px;
 }
 
-.discover4188-hero > img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.discover4188-hero-body {
+  min-width: 0;
 }
 
-.discover4188-hero-shade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, var(--lili-4188-image-shade-strong), var(--lili-4188-image-shade-soft) 70%);
+.discover4188-hero-tag {
+  color: var(--lili-4188-playback);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.discover4188-hero-copy {
-  position: absolute;
-  left: 42px;
-  bottom: 38px;
-  max-width: 440px;
+.discover4188-hero-body h2 {
+  margin: 8px 0 4px;
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--lili-4188-text-primary);
+
+  /* 长标题（真实 banner 的 archive_title 常几十字）收成两行，别把卡撑高。 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.discover4188-hero-body h3 {
+  margin: 0;
+  font-size: var(--lili-4188-type-body-size);
+  line-height: var(--lili-4188-type-body-leading);
+  color: var(--lili-4188-text-secondary);
 }
 
 .discover4188-hero-tags {
   display: flex;
-  gap: 6px;
   flex-wrap: wrap;
-  margin: -12px 0 18px;
+  gap: 6px;
+  margin-top: 24px;
 }
 
 .discover4188-hero-tags small {
@@ -100,33 +122,16 @@
   background: var(--lili-4188-image-chip);
 }
 
-.discover4188-hero-copy > span {
-  color: var(--lili-4188-playback);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.discover4188-hero-copy h2 {
-  margin: 9px 0 2px;
-  font-size: 42px;
-}
-
-.discover4188-hero-copy h3 {
-  margin: 0 0 22px;
-  color: var(--lili-4188-text-secondary);
-}
-
-.discover4188-hero-copy button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 19px;
+.discover4188-hero-play {
+  justify-self: end;
+  width: 56px;
+  height: 56px;
   border: 0;
-  border-radius: var(--lili-4188-radius-pill);
+  border-radius: 50%;
   background: var(--lili-4188-text-primary);
   color: var(--lili-4188-canvas);
-  font-weight: 650;
+  display: grid;
+  place-items: center;
   cursor: pointer;
 }
 
@@ -142,38 +147,38 @@
 .discover4188-grid {
   display: grid;
 
-  /* 列数随容器宽度自适应增长（4 → 5 → 6 …），卡片最小 230px，不再钉死 4 列。 */
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  /* 列数随容器宽度自适应增长，卡片最小 180px（原 230px）。方形封面高 = 卡宽，
+     230px 的方卡比上方 16:9 hero 封面（353 宽 ≈ 199 高）还高，视觉上压过了首屏
+     主推 banner，显得「新歌」比「新碟推荐」更重。收到 180px 后卡片约 180–205px
+     见方，明显小于 hero、层级回到「主推在上、推荐在下」。 */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 22px 16px;
 }
 
+/* 原型 .media-card：本体透明、无边框、无阴影、无位移；hover 仅播放按钮淡入 */
 .discover4188-card {
   min-width: 0;
-  padding: 5px;
-  margin: -5px;
-  border: 1px solid transparent;
-  border-radius: var(--lili-4188-radius-lg);
-  transition:
-    transform var(--lili-4188-duration-normal),
-    background var(--lili-4188-duration-normal);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
 }
 
 .discover4188-card:hover {
-  transform: translateY(-2px);
-  background: var(--lili-4188-surface-hover);
-  border-color: var(--lili-4188-border);
+  transform: none;
+  background: transparent;
+  border-color: transparent;
 }
 
 .discover4188-card.is-playing {
   background: var(--lili-4188-playback-soft);
-  border-color: var(--lili-4188-playback);
 }
 
 .discover4188-art {
   position: relative;
-  aspect-ratio: 1.55;
+  aspect-ratio: 1;
   overflow: hidden;
-  border-radius: var(--lili-4188-radius-md);
+  border-radius: 15px;
   background: var(--lili-4188-surface-elevated);
 }
 
@@ -249,14 +254,14 @@
 }
 
 .discover4188-card > strong {
-  margin-top: 10px;
-  font-size: 14px;
+  margin-top: 9px;
+  font-size: 12px;
 }
 
 .discover4188-card > span {
-  margin-top: 4px;
-  color: var(--lili-4188-text-secondary);
-  font-size: 12px;
+  margin-top: 3px;
+  color: var(--lili-4188-text-muted);
+  font-size: 10px;
 }
 
 .discover4188-card > small {
@@ -271,16 +276,13 @@
     gap: 16px 10px;
   }
 
+  /* 窄屏：hero-card 三列放不下，改竖排（封面在上、正文在下、播放键左对齐）。 */
   .discover4188-hero {
-    height: 300px;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
-  .discover4188-hero-copy {
-    left: 24px;
-    bottom: 24px;
-  }
-
-  .discover4188-hero-copy h2 {
-    font-size: 34px;
+  .discover4188-hero-play {
+    justify-self: start;
   }
 }

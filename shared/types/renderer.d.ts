@@ -62,6 +62,8 @@ declare global {
     unregisterAllShortcuts: () => Promise<void>;
     /** 订阅主进程下发的播放器命令（播放控制/音量/静音/迷你模式/收藏） */
     onPlayerCommand: (cb: (cmd: PlayerCommand) => void) => VoidFunction;
+    /** 订阅主进程下发的系统电源事件（锁屏/解锁/休眠/唤醒） */
+    onSystemPowerEvent: (cb: (payload: SystemPowerEvent) => void) => VoidFunction;
     /** 获取当前应用版本 */
     getAppVersion: () => Promise<string>;
     /** 判断是否为开发模式 */

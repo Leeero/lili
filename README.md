@@ -293,6 +293,23 @@ lili 换了打包身份（`appId` 由 `com.biu.wood3n` 改为 `com.leeero.lili`�
 
 ---
 
+## 📚 开发者文档
+
+本仓库面向协作者的上下文文档入口：
+
+| 文档 | 作用 |
+| --- | --- |
+| [`AGENTS.md`](AGENTS.md) | 读写规则、验证要求、事实分类与权威来源 |
+| [`PROJECT_INDEX.md`](PROJECT_INDEX.md) | 项目定位与「任务 → 文件」路由 |
+| [`docs/context/NOW.md`](docs/context/NOW.md) | 当前目标、进展、阻塞与下一步 |
+| [`docs/context/MAP.md`](docs/context/MAP.md) | 目录、版本、配置与部署位置 |
+| [`docs/context/RUNBOOK.md`](docs/context/RUNBOOK.md) | 构建 / 测试 / 发版操作步骤 |
+| [`docs/context/DECISIONS.md`](docs/context/DECISIONS.md) | 已确认决策及出处 |
+| [`docs/context/RISKS.md`](docs/context/RISKS.md) | 已知问题、风险与验证缺口 |
+| [`docs/context/history/README.md`](docs/context/history/README.md) | 历史记录索引 |
+
+---
+
 ## 🤝 贡献指南
 
 非常欢迎社区贡献！你可以按以下流程参与：

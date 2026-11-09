@@ -2,13 +2,39 @@
   "$schema": "https://lili.local/schemas/cplus-spec-lock.json",
   "meta": {
     "name": "lili 2.0 · C+ 满幅剧场 · 能力可读版",
-    "version": "1.3.35",
+    "version": "1.3.36",
     "frozenAt": "2026-10-10",
     "sourcePdf": "lili 2.0 · C+ 视觉稿（定性卡 + 12 屏 + 色板）, 14 页",
     "sourceRender": "/tmp/lili-design/page-01.png … page-14.png（pdftoppm -png -r 110，2200 × 1375）",
     "prototype": "prototypes/c-plus-2026/",
     "note": "本文件是重构的唯一视觉真值。任何数值变更必须先改本文件，再改实现，并重跑 tools/design-fidelity/verify.py。",
     "revisions": [
+      {
+        "version": "1.3.38",
+        "at": "2026-10-16",
+        "phase": "下载管理审查修复：门控真源 / 空态 / 危险色 / 二次确认文案",
+        "changes": [
+          "**行操作带门控改由 capabilities 驱动（屏 05）。**旧实现是 `row.status.includes(\"完成\")` 这类**展示文案字符串匹配**——等于把展示字符串当状态机：`canOpen` 还要求 `savePath` 存在（文案匹配查不到，已完成但文件缺失的任务会渲染一个点击后被静默拦截的「定位文件」假按钮），且任何 STATUS_LABEL 文案调整都会静默破坏门控。修法：`DownloadRowViewModel` 增加 `capabilities` 字段（model 层 `getDownloadTaskCapabilities` 的计算结果，该函数原有单测），`visibleActions` 只消费它；夹具任务补 `rawStatus`（原始 MediaDownloadStatus 枚举）供 fixture 层计算同一份 capabilities，TS 镜像与 JSON 同步、由既有逐字一致测试钉住。",
+          "**危险按钮常态显红（屏 05，`.manage4188-actions button.is-danger`）。**旧规则只有 `:hover` 才变红边——用户扫视页面时无法区分「清空记录」与普通批量操作，视觉前置预警不应是 hover 彩蛋。常态红字红边、hover 红底反白、disabled 回落到中性（不误导为可用的红）。",
+          "**「· 二次确认」后缀从按钮文案移除（屏 05「清空记录」与屏 04「从应用删除文件」）。**交互流程不写进按钮名：确认由点击后的弹窗承担，视觉前置预警由上一条的危险色承担。四处同步：页面实现、夹具 TS+JSON、原型 HTML。",
+          "**页头主按钮「打开下载目录」的路径尾巴截成末段（`…/Downloads`）。**完整绝对路径常超 300px，会把五按钮操作组挤成两行；截断后单行稳定，完整路径由原生 `title` 悬停揭示。`DownloadPillViewModel` 增加 `title` 字段透传。",
+          "**空态分两态（屏 05 真实路径）。**全空：「暂无下载任务 — 从任意曲目的操作菜单选择「下载音频」开始」；筛选空（如「视频」tab 无任务）：「当前分类暂无任务 — 切换到「全部」查看全部记录」。与库页「全隐藏 vs 确实没有」同一决策：指错方向的空态比空白更糟。`DownloadsView` 卡片分支在 rows 为空时渲染 `PageState kind=\"empty\"` 占位。",
+          "**`DownloadsView` 布局开关显式化：新增 `variant: \"card\" | \"table\"` prop。**旧开关是 `note` 的有无（「有注解带 ⇒ 表格分支」）——一个渲染属性兼任布局开关，读代码时无从知道这层语义。现在真实路径显式 `variant=\"card\"`（任务卡片网格，用户实际所见）、夹具路径 `variant=\"table\"`（TrackTable，设计稿第 6 页冻结形态，供保真度比对）。表格分支右键菜单同步从全量 ROW_ACTIONS 改为 `visibleActions(row)`（与卡片分支同门控）。",
+          "**像素闸门影响：**上述改动全部落在**真实路径**（card 分支）或纯逻辑层；夹具比对路径（table 分支）唯一的变化是右键菜单按状态门控（右键菜单不在像素探针内）与「清空记录」文案（filter 结构带只判 y 起点与带数，文案变短不改变带的起点）。1.3.36 已声明像素闸门待设计基准更新后复跑，本次未执行。回归：`tests/downloads-view.test.tsx`（新增 7 项：门控 / title / 危险色文案 / 空态 / canOpen 语义）+ 夹具镜像测试 + 全量 vitest。"
+        ]
+      },
+      {
+        "version": "1.3.36",
+        "at": "2026-10-16",
+        "phase": "内容区分类导航：顶栏胶囊 → 下划线 tab",
+        "changes": [
+          "**页面内分类导航从「顶栏反色药丸」迁到「内容区下划线 tab」（QQ 音乐式）。** 动因是「我的音乐」屏的分段胶囊悬浮在顶栏、与页头 H1 脱节，且与「全部播放」的紫色描边选中态同屏抢色。改为把分段落在页头正下方、贴内容区，激活项只画强调色下划线、未激活项落在一条弱分隔线上。",
+          "**`SegmentedControl` 新增 `variant` 档（`pill` 缺省 / `underline`）。** 语义不变（导航型仍是 `<nav>` + `aria-current`，模式切换型仍是按钮组 / tablist），只换视觉：underline 无药丸底、无圆角，容器 `border-b` + 激活项 `border-b-2` 强调色下划线。`pill` 作为显式保留档，供沉浸态（`/now-playing` 的封面 / 歌词 / 视频）等仍需要反色药丸的场合。",
+          "**分段渲染从壳层 `Layout` 下沉到各页内容区。** 新增 `useRouteSegments` hook 收敛原先散在 `Layout` 的三段组合逻辑（声明分段 + `/search` 运行时计数 + `/local-music` 真实目录名），各页经 `SegmentNav`（缺省 underline）在页头下方渲染。顶栏自此只有返回 / 前进 / 搜索。",
+          "**影响路由：**`/library` `/queue` `/download-list` `/local-music` `/collection/:id` 的分段从顶栏迁入内容区；`/search` `/user/:id` 的 `.social4188-tabs` 由「药丸容器 + 反色激活」改为「分隔线 + 强调色下划线」；设置页左侧竖导航与关注页分组侧栏**保持原样**（本就是内容区导航、非胶囊）。发现音乐真实路径已无数据源分段，无改动。",
+          "**这是一次主动偏离冻结设计稿的视觉决策。** 本文件 `topbarSegments` / `globalChrome` 与各屏 `anchors` / `verticalRhythm` 的像素基准仍是旧的「顶栏药丸」渲染；`verify.py` 的参考图比对在重渲染设计基准、重新量取各屏锚点之前**不会通过**。落地约束：单元测试（`resolveRouteShell` 契约、`SegmentedControl` 两档）与 Web 构建作为本轮出口，像素闸门待设计基准更新后再复跑。"
+        ]
+      },
       {
         "version": "1.3.35",
         "at": "2026-10-10",
@@ -483,6 +509,15 @@
           "排版令牌由 --lili-text-<role> 更名为 --lili-type-<role>，消除与文字颜色令牌 --lili-text-primary 的同前缀歧义。原子令牌后缀约定见 meta.tokenConventions。",
           "新增 tokenMap：真值路径 → CSS 令牌名的声明式映射，供 tests/design-tokens.test.ts 通用断言。",
           "明确排除项：占位封面渐变属于数据夹具，不进色板。"
+        ]
+      },
+      {
+        "version": "1.4.0",
+        "date": "2026-10-19",
+        "changes": [
+          "信息架构调整：「我的音乐」(`/library`) 的分段从「我的歌单/我收藏的/合集与系列」（归属×类型混合轴）收敛为归属轴两段「我创建的/我追的」——我创建的 = 自建收藏夹 + 自建合集/系列（类型差异只在瓦片徽标上体现），我追的 = 收藏的收藏夹 + 收藏的合集。本地目录移出库页（侧栏「本地音乐」已有独立入口）。",
+          "`/collection/:id` 详情页顶部类型 tab（「收藏夹 · 11 / 合集 · 21 / 系列 · 31」）整组移除：尾巴数字是 CollectionType 类型码（误导读总数），且三类 id 空间不同（mlid / season_id / series_id），无法在同 id 上切类型。返回靠壳层后退。`topbarSegments.byRoute` 与 `labelSources` 同步删除该路由条目。",
+          "本轮以用户诉求为真值（取代设计稿第 1/3 页的对应文案），夹具 screen-01-library / screen-02-playlist-detail 与绑定测试同步更新。"
         ]
       }
     ],
@@ -1434,44 +1469,6 @@
       }
     },
     {
-      "no": "03",
-      "name": "稍后播放",
-      "designPage": 4,
-      "prototype": "screens/03-watch-later.html",
-      "route": "/later",
-      "scroll": true,
-      "anchors": {
-        "topbar": [0, 71],
-        "h1Top": 122,
-        "leadTop": 192,
-        "filterTop": 236,
-        "noteTop": 653
-      },
-      "variants": ["page-head--narrow", "note"],
-      "hasRowPitch": true,
-      "playbarProgress": {
-        "enabled": true,
-        "measured": "[(792, 1172)]",
-        "reason": "该屏设计稿的播放栏是标准态：y=856 行 / x700–1200 / 阈值 30 实测单条实心横带 [(792, 1172)]（即像素 792–1171，宽 380），与第 02/03/04/05/06/09/13 页同值。启用横向判定以看守进度条宽度与中段起点。"
-      },
-      "playbarDetail": {
-        "probes": ["playbarCover", "playbarPlay", "playbarPill", "playbarGap"],
-        "windows": {
-          "playbarCover": "(24, 140, 818, 894, 20)",
-          "playbarPlay": "(640, 710, 818, 894, 200)",
-          "playbarPill": "(1310, 1400, 818, 894, 20)",
-          "playbarGap": "(1176, 1194, 818, 894, 20)"
-        },
-        "measured": {
-          "playbarCover": "[[828, 883]]",
-          "playbarPlay": "[[832, 879]]",
-          "playbarPill": "[[838, 873]]",
-          "playbarGap": "[]"
-        },
-        "reason": "该屏夹具提供「正在播放」内容（nowPlaying），播放栏渲染为满态、与设计稿一致，故栏内可判。四枚探针在**设计稿第 4 页**实测：封面 / 播放键 / 队列药丸三枚分别读到 [[828,883]] / [[832,879]] / [[838,873]]，与第 3 页（屏 02）同一组带 —— 两页的播放栏是同一条栏体（文案与进度同源）；playbarGap 为空带（0 条），守的是「进度条右端 1171」与「时间起点 1196」之间的设计留白。"
-      }
-    },
-    {
       "no": "04",
       "name": "本地音乐",
       "designPage": 5,
@@ -1941,9 +1938,7 @@
   "topbarSegments": {
     "rule": "顶栏中部分段组由当前路由决定，不是全局导航。品牌点击回 /，头像承载次级入口。",
     "byRoute": {
-      "/library": ["我的歌单", "我收藏的", "发现音乐"],
-      "/collection/:id": ["收藏夹 · 11", "合集 · 21", "系列 · 31"],
-      "/later": ["全部", "近 7 天", "近 30 天"],
+      "/library": ["我创建的", "我追的"],
       "/local-music": ["全部目录", "D 盘 · Lossless", "E 盘 · Live 录音"],
       "/download-list": ["全部", "音频", "视频"],
       "/search": ["音乐视频 · 9", "创作者 · 2"],
@@ -1957,15 +1952,14 @@
       "/user/:id": ["音乐内容", "播放列表", "动态"]
     },
     "labelSources": {
-      "/collection/:id": "尾巴「 · 11 / · 21 / · 31」是 **CollectionType 类型码**（11 收藏夹 / 21 视频合集 / 31 视频系列），是**标签自身的一部分**，属静态值 —— **不是集合数量**。取证见 meta.revisions 1.3.8（三条证据：页导语「仅数据类型不同」、三个数字与枚举逐一相等、激活项与该屏 collectionType 同源）。",
       "/search": "尾巴「 · 9 / · 2」是**搜索结果数**，属运行时数据，随查询变化 —— 壳层不得写死，须由结果集给出。落地机制（1.3.12 登记）：分段在壳层里是**模板**（前缀「音乐视频」/「创作者」+ 可选尾巴），计数由一个**非持久化 store** 承载、由结果页在拿到结果集后写入；`resolveRouteShell` 保持纯函数，模板与计数在 `Layout` 里组合成最终标签。**计数未知时（查询未提交）不渲染分隔符与数字**，只留前缀 —— 壳层里不得出现「音乐视频 · 」这种悬空尾巴。",
       "/local-music": "「D 盘 · Lossless」「E 盘 · Live 录音」是**本地目录名**，属运行时数据 —— 需真实目录列表后才能在壳层声明。",
-      "rule": "带尾缀的分段项在壳层是**模板**，不是字面标签 —— 这一条适用于 `/search`（结果数）与 `/local-music`（目录名）；`/collection/:id` 的数字是 CollectionType 类型码（静态、属标签自身，见 1.3.8），不受此规则约束。`tests/app-shell-interactions.test.ts` 对 `/search` 的断言因此不比对字面标签，而是比对模板前缀与「计数未知时无悬空分隔符」。"
+      "rule": "带尾缀的分段项在壳层是**模板**，不是字面标签 —— 适用于 `/search`（结果数）与 `/local-music`（目录名）。`tests/app-shell-interactions.test.ts` 对 `/search` 的断言因此不比对字面标签，而是比对模板前缀与「计数未知时无悬空分隔符」。"
     }
   },
   "globalChrome": {
     "brand": {
-      "text": "lili",
+      "text": "LiLi",
       "action": "回到 /"
     },
     "topbarNote": {
@@ -1982,10 +1976,9 @@
     "search": {
       "placeholder": "搜索音乐视频或创作者",
       "placeholderByRoute": {
-        "/collection/:id": "搜索收藏夹与合集",
-        "/later": "搜索标题 / UP 主名称"
+        "/collection/:id": "搜索收藏夹与合集"
       },
-      "placeholderRule": "占位**逐页不同**，`placeholder` 只是缺省值。取证：设计稿第 02/05/06/08/09/10/12/13 页为「搜索音乐视频或创作者」，第 03 页（屏 02 · /collection/:id）为「搜索收藏夹与合集」，第 04 页（屏 03 · /later）为「搜索标题 / UP 主名称」。第 07 页（屏 06 · /search）**整块不画搜索位**；第 11 页（屏 10 · /now-playing）该处画的是「封面 / 歌词 / 视频」分段组（见 topbarSegments）。1.3.8 起 `placeholderByRoute` 已落地：顶栏按路由查本表、缺省回落 `placeholder`。",
+      "placeholderRule": "占位**逐页不同**，`placeholder` 只是缺省值。取证：设计稿第 02/05/06/08/09/10/12/13 页为「搜索音乐视频或创作者」，第 03 页（屏 02 · /collection/:id）为「搜索收藏夹与合集」。第 07 页（屏 06 · /search）**整块不画搜索位**；第 11 页（屏 10 · /now-playing）该处画的是「封面 / 歌词 / 视频」分段组（见 topbarSegments）。1.3.8 起 `placeholderByRoute` 已落地：顶栏按路由查本表、缺省回落 `placeholder`。",
       "hotkey": "Ctrl K",
       "keycap": {
         "fill": "rgba(255,255,255,0.12)",

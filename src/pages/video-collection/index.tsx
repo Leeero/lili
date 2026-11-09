@@ -5,6 +5,8 @@ import { CollectionType } from "@/common/constants/collection";
 import { usePlaylistDetailFixtureData } from "@/features/playlist/fixture";
 import { PlaylistDetailView } from "@/features/playlist/playlist-detail-view";
 import { PLAYLIST_DETAIL_TRACK_ACTIONS } from "@/features/playlist/track-actions";
+import SegmentNav from "@/layout/topbar/segment-nav";
+import { useRouteSegments } from "@/layout/use-route-segments";
 import { AnnotationBand } from "@/ui/patterns/annotation-band";
 import { DialogAction, DialogStatic } from "@/ui/patterns/dialog";
 
@@ -37,6 +39,8 @@ const DIALOG_STATIC_TOP = 296 - SHELL_MAIN_TOP;
  */
 const FixturePlaylistDetail = ({ preview4188 = false }: { preview4188?: boolean }) => {
   const fixture = usePlaylistDetailFixtureData();
+  const { segments, activeKey } = useRouteSegments();
+  const tabs = segments.length > 0 ? <SegmentNav segments={segments} activeKey={activeKey} /> : null;
 
   if (!fixture) return null;
 
@@ -52,6 +56,7 @@ const FixturePlaylistDetail = ({ preview4188 = false }: { preview4188?: boolean 
       <PlaylistDetailView
         title={fixture.title}
         lead={fixture.lead}
+        tabs={tabs}
         pills={fixture.pills}
         sectionTitle={fixture.sectionTitle}
         columns={columns}

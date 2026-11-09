@@ -51,7 +51,7 @@ describe("stage 1 domain adapters", () => {
     });
   });
 
-  test("maps video and audio favorite resources while dropping invalid entries", () => {
+  test("maps video/audio favorite resources; keeps invalid and collection entries with markers", () => {
     const base = {
       title: "Favorite",
       cover: "cover",
@@ -73,12 +73,29 @@ describe("stage 1 domain adapters", () => {
       id: "bilibili-audio:10",
       source: "bilibili-audio",
       sourceRef: { sid: 10 },
+      invalid: false,
     });
     expect(adaptFavoriteResourceToTrack({ ...base, id: 20, type: 2, bvid: "BV20" })).toMatchObject({
       id: "bilibili-video:BV20",
       sourceRef: { aid: "20", bvid: "BV20" },
+      invalid: false,
     });
-    expect(adaptFavoriteResourceToTrack({ ...base, id: 30, type: 2, attr: 1 })).toBeUndefined();
+    // 失效条目（attr 1/9）不再丢弃：打 invalid 标记，灰显但留在列表里。
+    expect(adaptFavoriteResourceToTrack({ ...base, id: 30, type: 2, attr: 1, bvid: "BV30" })).toMatchObject({
+      id: "bilibili-video:BV30",
+      invalid: true,
+    });
+    expect(adaptFavoriteResourceToTrack({ ...base, id: 31, type: 12, attr: 9 })).toMatchObject({
+      id: "bilibili-audio:31",
+      invalid: true,
+    });
+    // 合集条目（type 21）：打 collectionHref，点击跳合集详情，不是单曲。
+    expect(adaptFavoriteResourceToTrack({ ...base, id: 40, type: 21 })).toMatchObject({
+      id: "bilibili-collection:40",
+      collectionHref: "/collection/40?type=21",
+    });
+    // 视频缺 bvid（无法溯源）才真正丢弃。
+    expect(adaptFavoriteResourceToTrack({ ...base, id: 50, type: 2, bvid: "", bv_id: "" })).toBeUndefined();
   });
 
   test("keeps created and collected playlist ownership semantics", () => {

@@ -42,6 +42,14 @@ interface DiscoverHeadingProps {
   title: string;
   lead: ReactNode;
   filters: DiscoverFilter[];
+  /**
+   * 语义筛选控件。**传了它就用它替代 `filters` 的默认渲染。**
+   *
+   * 真实路径传 `SegmentedControl`（「音乐分区 / 新碟与新歌」是互斥二选一的数据源）；
+   * 夹具路径不传，走 `filters` 的静态药丸 —— 那一屏的 5 枚是状态标记与模式选择，
+   * 本来就不是互斥选项。
+   */
+  filterControl?: ReactNode;
   onPillPress: (filter: DiscoverFilter) => void;
 }
 
@@ -52,32 +60,34 @@ interface DiscoverHeadingProps {
  * spec-lock 也明确要求取 `aligned` 而非原型类名里的 `flat` —— `PageHeader` 缺省
  * 就是这个，不必再发明一遍。屏级像素靠 `leadOffsetPx` / `gapPx` 两个显式入参下发。
  *
- * **`filterControl` / `viewSwitcher` 两个槽位已随 2026-10-12 的产品决策移除**：
- * 数据源收敛为单一的「音乐分区」后，页头没有互斥二选一可表达；视图切换也一并砍掉
- * （本页永久卡片模式）。两处都别再以「真实路径要传」为由接回 —— 现在没有任何调用方
- * 需要它们，`filters` 是页头唯一的筛选渲染源。
+ * **真实路径（发现音乐）已不用它**：产品要求去页头、首屏直接铺内容，改为
+ * `DiscoverBody` + 一条 `.discover4188-toolbar` 数据源行（见 `pages/music-recommend`）。
+ * 它现在只服务夹具屏 07 / 08 的保真比对 —— 那两屏的设计稿画的正是 H1 + 导语 + 药丸行。
+ * 「卡片 / 列表」的视图切换控件随之删除：真实路径只做卡片，夹具的分段药丸是静态标记。
  */
-export const DiscoverHeading = ({ title, lead, filters, onPillPress }: DiscoverHeadingProps) => (
+export const DiscoverHeading = ({ title, lead, filters, filterControl, onPillPress }: DiscoverHeadingProps) => (
   <PageHeader title={title} lead={lead} leadOffsetPx={DISCOVER_HEAD_RHYTHM.leadMarginTop}>
-    <FilterBar label="发现音乐筛选" gapPx={DISCOVER_HEAD_RHYTHM.filterMarginTop}>
-      {filters.map(item =>
-        item.onPress ? (
-          <Button
-            key={item.key}
-            variant={item.variant}
-            icon={item.icon}
-            trailing={item.trailing}
-            disabled={item.disabled}
-            onClick={() => onPillPress(item)}
-          >
-            {item.label}
-          </Button>
-        ) : (
-          <Pill key={item.key} variant={item.variant} icon={item.icon} trailing={item.trailing}>
-            {item.label}
-          </Pill>
-        ),
-      )}
-    </FilterBar>
+    {filterControl ?? (
+      <FilterBar label="发现音乐筛选" gapPx={DISCOVER_HEAD_RHYTHM.filterMarginTop}>
+        {filters.map(item =>
+          item.onPress ? (
+            <Button
+              key={item.key}
+              variant={item.variant}
+              icon={item.icon}
+              trailing={item.trailing}
+              disabled={item.disabled}
+              onClick={() => onPillPress(item)}
+            >
+              {item.label}
+            </Button>
+          ) : (
+            <Pill key={item.key} variant={item.variant} icon={item.icon} trailing={item.trailing}>
+              {item.label}
+            </Pill>
+          ),
+        )}
+      </FilterBar>
+    )}
   </PageHeader>
 );

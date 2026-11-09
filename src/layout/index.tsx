@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Outlet, useLocation } from "react-router";
 
@@ -14,15 +14,12 @@ import Login from "@/layout/login";
 import MobileNav from "@/layout/mobile-nav";
 import PlayBar from "@/layout/playbar";
 import QueueDrawer from "@/layout/queue-drawer";
-import { composeLocalMusicSegments, composeSegmentCount, resolveRouteShell } from "@/layout/route-shell";
+import { resolveRouteShell } from "@/layout/route-shell";
 import Sidebar from "@/layout/sidebar";
 import TopBar from "@/layout/topbar";
-import SegmentNav from "@/layout/topbar/segment-nav";
 import { useLoginModal } from "@/store/login-modal";
 import { usePlayList } from "@/store/play-list";
 import { useQueueDrawer } from "@/store/queue-drawer";
-import { useSearchSegments } from "@/store/search-segments";
-import { useSettings } from "@/store/settings";
 import { useUser } from "@/store/user";
 
 /**
@@ -42,10 +39,11 @@ const LoginHost = () => {
  * 应用外层。
  *
  * 三件事，且只有三件事：
- *   1. 把当前路径翻译成壳层契约（`chrome` + 页面内二级导航 + 激活项），交给 `AppShell`。
+ *   1. 把当前路径翻译成壳层契约（`chrome` + 顶栏说明），交给 `AppShell`。
  *      壳层状态是**受控**的——`/now-playing` 隐藏两栏、`/mini-player` 整窗接管，
- *      都由 `route-shell.ts` 决定，`AppShell` 自己不猜。`search` 只参与分段组的
- *      激活判定（`/collection/:id` 的三段靠 `?type=` 区分），不影响其余契约。
+ *      都由 `route-shell.ts` 决定，`AppShell` 自己不猜。页面内二级导航（分段
+ *      tab）已从壳层下沉到各页内容区（`useRouteSegments` + `SegmentNav`），
+ *      本层不再渲染它。
  *   2. 托住全局弹层（收藏夹选择、确认框、发布说明、下载选择、登录）。
  *      它们不属于任何单个页面，也不属于壳层。
  *   3. 页面级错误边界按路径重置，避免一个页面的渲染错误把整个应用钉死。
@@ -60,30 +58,8 @@ const Layout = () => {
   const updateUser = useUser(state => state.updateUser);
   const initPlayer = usePlayList(state => state.init);
   const location = useLocation();
-  const {
-    chrome,
-    contextSegments: declaredContextSegments,
-    activeContextKey,
-    topbarNote,
-  } = resolveRouteShell(location.pathname, location.search);
-  const { videoCount, creatorCount } = useSearchSegments();
-  const localMusicDirs = useSettings(state => state.localMusicDirs);
+  const { chrome, topbarNote } = resolveRouteShell(location.pathname, location.search);
   const queueOpen = useQueueDrawer(state => state.open);
-  const pageOwnsContextNavigation =
-    location.pathname === "/search" ||
-    location.pathname === "/follow" ||
-    location.pathname === "/settings" ||
-    location.pathname.startsWith("/user/");
-
-  /**
-   * 模板分段与运行时计数的组合点（spec-lock `topbarSegments.labelSources`）。
-   * 纯函数 `composeSegmentCount` 在 route-shell.ts，可被单测直接断言。
-   */
-  const contextSegments = useMemo(() => {
-    const counted = declaredContextSegments.map(segment => composeSegmentCount(segment, { videoCount, creatorCount }));
-    if (location.pathname !== "/local-music") return counted;
-    return composeLocalMusicSegments(counted, localMusicDirs, new URLSearchParams(location.search).has("fixture"));
-  }, [creatorCount, declaredContextSegments, localMusicDirs, location.pathname, location.search, videoCount]);
 
   useEffect(() => {
     updateUser();
@@ -111,11 +87,6 @@ const Layout = () => {
         queueOpen={queueOpen}
       >
         <div className="flex h-full min-h-0 flex-col">
-          {contextSegments.length > 0 && !pageOwnsContextNavigation && (
-            <div className="mb-4 flex h-10 flex-none items-center" aria-label="页面内导航">
-              <SegmentNav segments={contextSegments} activeKey={activeContextKey} />
-            </div>
-          )}
           <div className="min-h-0 flex-1">
             {/*
               页面级错误边界：**只**包住路由内容。

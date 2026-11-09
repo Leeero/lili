@@ -34,6 +34,17 @@ export interface SegmentItem {
 
 export type SegmentedSize = "default" | "compact";
 
+/**
+ * 分段控件的两种视觉形态。
+ *
+ *   · `pill`   反色药丸（顶栏 / 沉浸态模式段）：激活项铺一块实心底、字反色。
+ *   · `underline` 下划线 tab（页面内容区的分类导航）：无底、无圆角，激活项
+ *     只在底部画一条强调色下划线，未激活项落在一条弱分隔线上 —— QQ 音乐式。
+ *
+ * 语义不变：导航型仍是 `<nav>` + `aria-current`，模式切换型仍是按钮组 / tablist。
+ */
+export type SegmentVariant = "pill" | "underline";
+
 interface SegmentedControlProps {
   items: SegmentItem[];
   /** 无障碍名称。顶栏用「顶栏分段导航」，沉浸态模式切换用「显示模式」。 */
@@ -51,6 +62,11 @@ interface SegmentedControlProps {
    *   `compact` 沉浸态模式段用：项高 32、内边距 18、字号 15、容器底白 10% + 8% 描边。
    */
   size?: SegmentedSize;
+  /**
+   * 视觉形态：`pill`（缺省，反色药丸）或 `underline`（下划线 tab）。
+   * 页面内容区的分类导航用 `underline`，壳层 / 沉浸态的模式段保持 `pill`。
+   */
+  variant?: SegmentVariant;
   /**
    * 关联的内容面板 id。**给了它才用 tab 语义**（`role="tablist"` + `aria-selected`
    * + `aria-controls`）；不给则退化为 `role="group"` + `aria-pressed` 的切换按钮组。
@@ -115,18 +131,40 @@ export const SegmentedControl = ({
   activeKey,
   onSelect,
   size = "default",
+  variant = "pill",
   panelId,
   note,
   className,
 }: SegmentedControlProps) => {
   const isNavigation = items.some(item => item.href);
   const sizing = SIZES[size];
+  const isUnderline = variant === "underline";
   const useTabs = !isNavigation && Boolean(panelId);
 
-  const itemClass = (isActive: boolean, isDisabled: boolean) =>
-    twMerge(
-      "flex flex-none cursor-pointer items-center gap-1.5 rounded-[var(--lili-radius-pill)]",
-      "whitespace-nowrap transition-colors duration-[var(--lili-duration-fast)] ease-[var(--lili-ease-standard)]",
+  const itemClass = (isActive: boolean, isDisabled: boolean) => {
+    const base =
+      "flex flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap transition-colors duration-[var(--lili-duration-fast)] ease-[var(--lili-ease-standard)]";
+
+    if (isUnderline) {
+      return twMerge(
+        base,
+        sizing.item,
+        // `-mb-px` 让下划线槽位叠到容器的 1px 分隔线上；激活项用强调色把
+        // 这一段「顶」成自己的下划线，未激活项透明，视觉上仍是同一条分隔线。
+        "-mb-px border-b-2 border-transparent px-3",
+        isActive
+          ? "border-[rgb(var(--lili-accent))] font-semibold text-[rgb(var(--lili-text-primary))]"
+          : "text-[rgb(var(--lili-text-secondary))] hover:text-[rgb(var(--lili-text-primary))]",
+        isActive
+          ? "lili-theme-4188:border-[var(--lili-4188-action)] lili-theme-4188:text-[var(--lili-4188-text-primary)]"
+          : "lili-theme-4188:text-[var(--lili-4188-text-secondary)] lili-theme-4188:hover:text-[var(--lili-4188-text-primary)]",
+        isDisabled && "cursor-not-allowed opacity-40 hover:text-current",
+      );
+    }
+
+    return twMerge(
+      base,
+      "rounded-[var(--lili-radius-pill)]",
       sizing.item,
       isActive
         ? "bg-[rgb(var(--lili-inverse-surface))] font-semibold text-[rgb(var(--lili-inverse-ink))]"
@@ -136,6 +174,7 @@ export const SegmentedControl = ({
         : "lili-theme-4188:text-[var(--lili-4188-text-secondary)] lili-theme-4188:hover:bg-[var(--lili-4188-surface-hover)]",
       isDisabled && "cursor-not-allowed opacity-40 hover:bg-transparent",
     );
+  };
 
   const countClass = (isActive: boolean) =>
     twMerge(
@@ -219,9 +258,21 @@ export const SegmentedControl = ({
     );
   });
 
+  /**
+   * `w-fit` 不是冗余的：分段控件的底是**贴着两三个分段的药丸**，不是整行底条。
+   * `flex-none` 只在父级是 flex 行时挡得住拉伸，另外两种常见父级都挡不住 ——
+   * 块级父级下这个块级盒本来就占满整行；flex 列里交叉轴的 `stretch` 也会把它
+   * 拉到容器宽（设计系统展示页就是这种）。发现音乐页的「音乐分区 / 新碟与新歌」
+   * 落在 `PageHeader` 的标题列（块级）里，曾把背景拉到 1136px —— 与 H1 同宽，
+   * 而两段标签只要 ~200px。
+   *
+   * 调用方仍可用 `className` 显式覆写宽度：twMerge 里后手者胜。
+   */
   const containerClass = twMerge(
-    "flex flex-none items-center rounded-[var(--lili-radius-pill)]",
-    sizing.container,
+    "flex w-fit flex-none",
+    isUnderline
+      ? "mb-5 gap-2 border-b border-[var(--lili-border-weak)] lili-theme-4188:border-[var(--lili-4188-border)]"
+      : `items-center rounded-[var(--lili-radius-pill)] ${sizing.container}`,
     className,
   );
 

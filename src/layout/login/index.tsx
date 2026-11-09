@@ -21,6 +21,7 @@ const Login = ({ isOpen, onOpenChange }: Props) => {
   const updateToken = useToken(state => state.updateToken);
   const updateCreatedFavorites = useFavoritesStore(state => state.updateCreatedFavorites);
   const updateCollectedFavorites = useFavoritesStore(state => state.updateCollectedFavorites);
+  const updateSeasonSeries = useFavoritesStore(state => state.updateSeasonSeries);
 
   const onClose = () => onOpenChange(false);
 
@@ -39,13 +40,17 @@ const Login = ({ isOpen, onOpenChange }: Props) => {
         const user = useUser.getState().user;
 
         if (user?.mid) {
-          await Promise.allSettled([updateCreatedFavorites(user.mid), updateCollectedFavorites(user.mid)]);
+          await Promise.allSettled([
+            updateCreatedFavorites(user.mid),
+            updateCollectedFavorites(user.mid),
+            updateSeasonSeries(user.mid),
+          ]);
         }
       } catch {
         addToast({ title: "更新用户信息失败", color: "danger" });
       }
     },
-    [updateCollectedFavorites, updateCreatedFavorites, updateToken, updateUser],
+    [updateCollectedFavorites, updateCreatedFavorites, updateSeasonSeries, updateToken, updateUser],
   );
 
   return (

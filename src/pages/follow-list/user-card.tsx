@@ -1,22 +1,38 @@
 import React from "react";
 import { useNavigate } from "react-router";
 
-import { Avatar, Button, Card, CardBody, addToast } from "@heroui/react";
-import { RiFlashlightFill, RiGroupLine, RiUserUnfollowLine } from "@remixicon/react";
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, addToast } from "@heroui/react";
+import { RiGroupLine, RiMore2Fill, RiStarFill, RiUserUnfollowLine, RiVipCrownFill, RiVipFill } from "@remixicon/react";
 
 import type { RelationListItem } from "@/service/relation-followings";
 import type { RelationTagUser } from "@/service/relation-tag";
 
+import { formatUrlProtocol } from "@/common/utils/url";
 import { UserRelationAction, postRelationModify } from "@/service/relation-modify";
 import { useModalStore } from "@/store/modal";
+import { Artwork } from "@/ui/primitives/artwork";
 
 interface Props {
   u: RelationListItem | RelationTagUser;
+  groupLabel?: string;
   refresh: () => void;
   onSetGroup: (u: RelationListItem | RelationTagUser) => void;
 }
 
-const UserCard = ({ u, refresh, onSetGroup }: Props) => {
+/** 头像 CDN 参数：face 可能带查询参数，直接拼接会产出非法 URL，这里统一收敛。 */
+const getAvatarUrl = (face?: string) => {
+  const url = formatUrlProtocol(face);
+  if (!url) return undefined;
+  return url.includes("@") || !url.includes("/bfs/") ? url : `${url}@160w_160h_1c_1s.webp`;
+};
+
+/**
+ * 关注卡片：横向紧凑布局，头像 + 名字 + 签名 + 分组标签。
+ *
+ * 分组页和关注页共用；卡片整块进主页，右上角「更多」是独立按钮，
+ * hover / 键盘 focus 时出现，触屏上保持可见。
+ */
+const UserCard = ({ u, groupLabel, refresh, onSetGroup }: Props) => {
   const navigate = useNavigate();
   const onOpenConfirmModal = useModalStore(s => s.onOpenConfirmModal);
 
@@ -52,66 +68,76 @@ const UserCard = ({ u, refresh, onSetGroup }: Props) => {
     });
   };
 
-  const handleSetGroup = () => {
-    onSetGroup(u);
-  };
+  const officialType = u.official_verify?.type;
+  const openProfile = () => navigate(`/user/${u.mid}`);
 
   return (
-    <Card
-      key={u.mid}
-      radius="md"
-      as="div"
-      isHoverable
-      isPressable
-      onPress={() => navigate(`/user/${u.mid}`)}
-      className="social4188-person-card group relative h-full w-full overflow-hidden"
-    >
-      <CardBody className="flex items-center space-y-2 overflow-hidden p-4">
-        <div className="relative h-32 w-32 flex-none">
-          <Avatar className="text-large h-32 w-32" src={`${u.face}@160w_160h_1c_1s.webp`} name={u.uname} />
-          {u.official_verify?.type === 0 && (
-            <div className="bg-warning ring-background absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full text-white ring-2">
-              <RiFlashlightFill size={14} />
-            </div>
+    <article className="social4188-follow-card">
+      <button
+        type="button"
+        className="social4188-follow-main"
+        aria-label={`打开 ${u.uname} 的主页`}
+        onClick={openProfile}
+      >
+        <span className="social4188-follow-avatar-wrap">
+          <Artwork
+            src={getAvatarUrl(u.face)}
+            artKey={String(u.mid)}
+            alt=""
+            radius="round"
+            gradient="avatar"
+            className="social4188-follow-avatar"
+          />
+          {u.special === 1 && (
+            <span className="social4188-follow-special" aria-label="特别关注" title="特别关注">
+              <RiStarFill size={10} />
+            </span>
           )}
-          {u.official_verify?.type === 1 && (
-            <div className="bg-primary ring-background absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full text-white ring-2">
-              <RiFlashlightFill size={14} />
-            </div>
-          )}
-        </div>
-        <div className="flex w-full flex-col items-center space-y-1">
-          <span className="max-w-full min-w-0 truncate text-lg">{u.uname}</span>
-          <span className="text-foreground-500 line-clamp-2 w-full text-center text-sm">{u.sign}</span>
-        </div>
-      </CardBody>
+        </span>
 
-      <div className="bg-background/70 absolute bottom-4 left-1/2 flex w-max -translate-x-1/2 translate-y-20 items-center justify-center rounded-full border border-white/10 px-1 py-1 shadow-lg backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 ease-in-out group-hover:translate-y-0">
-        <Button
-          size="sm"
-          variant="light"
-          radius="full"
-          onPress={handleSetGroup}
-          aria-label="设置分组"
-          title="设置分组"
-          startContent={<RiGroupLine size={18} />}
-        >
-          设置分组
-        </Button>
-        <Button
-          size="sm"
-          color="danger"
-          variant="light"
-          radius="full"
-          onPress={handleUnfollow}
-          aria-label="取消关注"
-          title="取消关注"
-          startContent={<RiUserUnfollowLine size={18} />}
-        >
-          取消关注
-        </Button>
-      </div>
-    </Card>
+        <span className="social4188-follow-copy">
+          <span className="social4188-follow-name">
+            <strong>{u.uname}</strong>
+            {officialType === 0 && (
+              <span className="social4188-follow-verify" aria-label="个人认证" title="个人认证">
+                <RiVipFill size={11} />
+              </span>
+            )}
+            {officialType === 1 && (
+              <span className="social4188-follow-verify is-org" aria-label="机构认证" title="机构认证">
+                <RiVipCrownFill size={11} />
+              </span>
+            )}
+          </span>
+          <span className="social4188-follow-sign">{u.sign || "这个人很神秘，什么都没写"}</span>
+          <span className="social4188-follow-meta">{groupLabel ?? "已关注"}</span>
+        </span>
+      </button>
+
+      <span className="social4188-follow-more">
+        <Dropdown placement="bottom-end">
+          <DropdownTrigger>
+            <button type="button" className="social4188-follow-more-btn" aria-label={`更多操作：${u.uname}`}>
+              <RiMore2Fill size={16} />
+            </button>
+          </DropdownTrigger>
+          <DropdownMenu aria-label={`更多操作：${u.uname}`} variant="flat">
+            <DropdownItem key="set-group" startContent={<RiGroupLine size={18} />} onPress={() => onSetGroup(u)}>
+              设置分组
+            </DropdownItem>
+            <DropdownItem
+              key="unfollow"
+              className="text-danger"
+              color="danger"
+              startContent={<RiUserUnfollowLine size={18} />}
+              onPress={handleUnfollow}
+            >
+              取消关注
+            </DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+      </span>
+    </article>
   );
 };
 

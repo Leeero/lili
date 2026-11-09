@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router";
+
 import type { ContextMenuItem } from "@/components/context-menu";
 import type { Track } from "@/domain/track";
 
@@ -37,6 +39,14 @@ export const PlaylistTrackView = <T,>({
   onPlay,
 }: PlaylistTrackViewProps<T>) => {
   const displayMode = useSettings(state => state.displayMode);
+  const navigate = useNavigate();
+
+  // 合集条目点跳详情；失效与合集都不触发播放（与 TrackRow 列表模式一致）。
+  const pressOf = (entry: PlaylistTrackEntry<T>) => {
+    if (entry.track.collectionHref !== undefined) return () => navigate(entry.track.collectionHref as string);
+    if (entry.track.invalid) return undefined;
+    return () => onPlay(entry);
+  };
 
   if (displayMode === "card") {
     return (
@@ -58,7 +68,8 @@ export const PlaylistTrackView = <T,>({
             time={entry.timestamp}
             menus={getActions(entry)}
             onMenuAction={key => onAction(key, entry)}
-            onPress={() => onPlay(entry)}
+            onPress={pressOf(entry)}
+            invalid={entry.track.invalid}
           />
         )}
       />

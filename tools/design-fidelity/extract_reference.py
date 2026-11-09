@@ -19,7 +19,6 @@ CANVAS = (1440, 900)
 SCREENS = [
     ("01-library", 2, "我的音乐库"),
     ("02-playlist-detail", 3, "我的收藏 · 详情"),
-    ("03-watch-later", 4, "稍后播放"),
     ("04-local-music", 5, "本地音乐"),
     ("05-downloads", 6, "下载管理"),
     ("06-search", 7, "搜索结果"),

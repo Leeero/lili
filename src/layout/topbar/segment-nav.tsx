@@ -10,11 +10,20 @@ interface SegmentNavProps {
   activeKey: string;
   /** 分段组右侧的弱化说明（如 `/` 的「已下线: 流行 / 鬼畜」）。 */
   note?: string;
+  /**
+   * 视觉形态，缺省 `underline`。
+   *
+   * 2026 的分段组已从「顶栏反色药丸」迁到「内容区下划线 tab」（QQ 音乐式）：
+   * 页面内二级导航现在落在各页标题正下方、贴着内容，不再悬浮在顶栏里。保留
+   * `pill` 只为一处遗留 —— 沉浸态（`/now-playing`）的「封面 / 歌词 / 视频」
+   * 模式段与既有设计系统展示页，它们走 `SegmentedControl` 而非本组件。
+   */
+  variant?: "pill" | "underline";
   className?: string;
 }
 
 /**
- * 顶栏中部的分段组 —— 路由契约（`TopbarSegment[]`）到 `SegmentedControl` 的适配层。
+ * 分段导航 —— 路由契约（`TopbarSegment[]`）到 `SegmentedControl` 的适配层。
  *
  * 这个文件只剩下「翻译」，视觉与语义全部由 `SegmentedControl` 承担。此前的
  * 内联实现与组件层是同一份设计的两个副本，而那份副本里有三处取值是**临时收敛**：
@@ -27,18 +36,14 @@ interface SegmentNavProps {
  * 当时收敛的理由写在旧注释里：那些一次性的白色叠层**没有登记进色板**，
  * 只能挑一个最接近的已有档位（白 10%）顶上。P2 已把 4 / 5.5 / 8 / 9 / 12 /
  * 14 / 18 / 20 / 22 / 28% 十档按实际不透明度登记进 palette.css，收敛的理由
- * 随之消失，所以这里改回原型值。三处差值分别是 1% / 2% / 通道差 4，
- * 都落在 L3 整屏亮度差的容差之内。
+ * 随之消失，所以这里改回原型值。
  *
  * **激活键不是 pathname。** 三段共用同一个 pathname、只靠 query 区分时
  * （`/collection/:id?type=`），拿 pathname 当激活键会让三段全灭。所以激活
  * 判定由契约层（`resolveRouteShell`）给出 `activeKey`，本层只负责传递 ——
- * 「`type` 缺省是 11」这类知识属于那个路由，不属于顶栏。
- *
- * `window-no-drag` 必须由本层给出：整条顶栏是可拖动窗口区域，分段组要挡住拖动
- * 才能被点到。组件层不该知道 Electron 的窗口拖动，那是壳层的事。
+ * 「`type` 缺省是 11」这类知识属于那个路由，不属于本组件。
  */
-const SegmentNav = ({ segments, activeKey, note, className }: SegmentNavProps) => {
+const SegmentNav = ({ segments, activeKey, note, variant = "underline", className }: SegmentNavProps) => {
   const location = useLocation();
 
   /**
@@ -64,7 +69,7 @@ const SegmentNav = ({ segments, activeKey, note, className }: SegmentNavProps) =
     // 有 `key` 时它是身份（query 型分段）；没有则用目标路径，再没有则用标签。
     key: segment.key ?? segment.href ?? segment.label,
     label: segment.label,
-    // 模板分段（countKey）的计数由 Layout 组合进 `count`；计数未知时是
+    // 模板分段（countKey）的计数由调用方组合进 `count`；计数未知时是
     // undefined —— 分隔符与数字一起消失，不渲染悬空尾巴。
     count: segment.count,
     href: resolveHref(segment.href),
@@ -75,11 +80,12 @@ const SegmentNav = ({ segments, activeKey, note, className }: SegmentNavProps) =
 
   return (
     <SegmentedControl
-      label="顶栏分段导航"
+      label="页面内分段导航"
       activeKey={activeKey}
       items={items}
       note={note}
-      className={`window-no-drag ${className ?? ""}`}
+      variant={variant}
+      className={className}
     />
   );
 };

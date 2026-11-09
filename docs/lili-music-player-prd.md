@@ -686,7 +686,7 @@
 
 | 产品模块 | 主要现有服务/能力 |
 |---|---|
-| 发现音乐 | `web-interface-region-feed-rcmd`、`music-comprehensive-web-rank`（`web-interface-new-music` / `-banner` 已于 2026-10-12 随「新碟与新歌」档位移除） |
+| 发现音乐 | `web-interface-region-feed-rcmd`、`music-comprehensive-web-rank`、`web-interface-new-music`、`web-interface-new-music-banner` |
 | 搜索 | `main-suggest`、`web-interface-search-type` |
 | 播放 | `web-interface-view`、`player-playurl`、`audio-web-url`、`audio-song-info`、`player-pagelist` |
 | 收藏/播放列表 | `fav-folder-*`、`fav-resource-*`、`medialist-gateway-*`、`series-*` |

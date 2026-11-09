@@ -33,6 +33,8 @@ interface Props {
   menus: ContextMenuItem[];
   onMenuAction?: (key: string) => void;
   hidePubTime?: boolean;
+  /** 失效条目：灰显、不响应播放。 */
+  invalid?: boolean;
 }
 
 const MusicListItem = ({
@@ -51,6 +53,7 @@ const MusicListItem = ({
   index,
   pubTime,
   hidePubTime,
+  invalid = false,
 }: Props) => {
   const navigate = useNavigate();
   const playId = usePlayList(state => state.playId);
@@ -71,10 +74,12 @@ const MusicListItem = ({
         disableAnimation
         variant={isPlay ? "flat" : "light"}
         color={isPlay ? "primary" : "default"}
-        onDoubleClick={onPress}
+        onDoubleClick={invalid ? undefined : onPress}
         className={clx(
           "group flex w-full items-center justify-between rounded-md",
           isCompact ? "h-9 min-h-9 min-w-0 px-0 text-sm" : "h-auto min-h-auto min-w-auto space-y-2 p-2",
+          // 失效条目整行降透明度，鼠标不显示可点击手势。
+          invalid && "cursor-default opacity-45",
         )}
       >
         <div className={clx("grid w-full items-center gap-4", gridCols)}>
@@ -84,7 +89,10 @@ const MusicListItem = ({
           {/* 2. 音乐信息 */}
           {isCompact ? (
             <div className="min-w-0 truncate text-left">
-              <span className={clx("truncate", { "text-primary": isPlay })}>{title}</span>
+              <span className={clx("truncate", { "text-primary": isPlay })}>
+                {title}
+                {invalid && <span className="text-foreground-400 ml-1 text-xs">[已失效]</span>}
+              </span>
             </div>
           ) : (
             <div className="flex min-w-0 items-center overflow-hidden">
@@ -98,7 +106,7 @@ const MusicListItem = ({
                   className="m-0"
                   params="672w_378h_1c.avif"
                 />
-                {!isPlay && typeof onPress === "function" && (
+                {!isPlay && !invalid && typeof onPress === "function" && (
                   <div className="absolute inset-0 z-20 flex items-center justify-center rounded-md bg-[rgba(0,0,0,0.35)] opacity-0 group-hover:opacity-100">
                     <RiPlayFill
                       size={20}
@@ -108,7 +116,10 @@ const MusicListItem = ({
                 )}
               </div>
               <div className="ml-2 flex min-w-0 flex-col items-start justify-center space-y-1">
-                <span className={clx("w-full truncate text-left text-base", { "text-primary": isPlay })}>{title}</span>
+                <span className={clx("w-full truncate text-left text-base", { "text-primary": isPlay })}>
+                  {title}
+                  {invalid && <span className="text-foreground-400 ml-2 text-xs">[已失效]</span>}
+                </span>
                 {Boolean(upName) && (
                   <span
                     className={clx("text-foreground-500 w-fit truncate text-sm", {

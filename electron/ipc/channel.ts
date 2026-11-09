@@ -38,6 +38,8 @@ export const channel = {
     state: "player:state",
     // 主进程 -> 渲染端：统一播放命令（PlayerCommand）
     command: "player:command",
+    // 主进程 -> 渲染端：系统电源事件（SystemPowerEvent），驱动自动暂停
+    systemEvent: "player:system-event",
   },
   shortcut: {
     triggered: "shortcut:triggered",

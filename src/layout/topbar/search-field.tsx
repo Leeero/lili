@@ -94,7 +94,7 @@ const SearchField: React.FC<SearchFieldProps> = ({ onFocusChange, className }) =
     }
     const normalizedKeyword = normalizeSearchKeyword(rawKeyword);
     addSearchHistory(normalizedKeyword);
-    if (location.pathname === "/later" || location.pathname === "/local-music") {
+    if (location.pathname === "/local-music") {
       const params = new URLSearchParams(location.search);
       params.set("key", normalizedKeyword);
       navigate(`${location.pathname}?${params.toString()}`);
