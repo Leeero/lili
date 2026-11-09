@@ -42,6 +42,12 @@ interface AppSettings {
     collected: boolean;
   };
   reportPlayHistory: boolean;
+  /** 锁屏 / 息屏 / 休眠时自动暂停播放 */
+  autoPauseOnLock: boolean;
+  /** 耳机或音频输出设备断开时自动暂停播放 */
+  autoPauseOnAudioDeviceLost: boolean;
+  /** 解锁 / 唤醒后自动恢复播放（仅当本次暂停由系统触发且未换歌时生效） */
+  autoPauseResumeOnUnlock: boolean;
   /** 本地音乐目录列表 */
   localMusicDirs: string[];
 }

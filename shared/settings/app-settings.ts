@@ -27,5 +27,8 @@ export const defaultAppSettings: AppSettings = {
     collected: false,
   },
   reportPlayHistory: true,
+  autoPauseOnLock: true,
+  autoPauseOnAudioDeviceLost: true,
+  autoPauseResumeOnUnlock: false,
   localMusicDirs: [],
 };

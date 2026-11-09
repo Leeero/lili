@@ -76,6 +76,9 @@ export const useSettings = create<AppSettings & SettingsActions>()(
           sideMenuWidth: state.sideMenuWidth,
           sideMenuCollectionFolded: state.sideMenuCollectionFolded,
           reportPlayHistory: state.reportPlayHistory,
+          autoPauseOnLock: state.autoPauseOnLock,
+          autoPauseOnAudioDeviceLost: state.autoPauseOnAudioDeviceLost,
+          autoPauseResumeOnUnlock: state.autoPauseResumeOnUnlock,
           localMusicDirs: state.localMusicDirs,
         };
       },

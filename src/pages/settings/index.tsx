@@ -41,6 +41,9 @@ const useSystemSettingsForm = () => {
     showSearchHistory,
     proxySettings,
     reportPlayHistory,
+    autoPauseOnLock,
+    autoPauseOnAudioDeviceLost,
+    autoPauseResumeOnUnlock,
   } = useSettings(
     useShallow(s => ({
       fontFamily: s.fontFamily,
@@ -59,6 +62,9 @@ const useSystemSettingsForm = () => {
       showSearchHistory: s.showSearchHistory,
       proxySettings: s.proxySettings,
       reportPlayHistory: s.reportPlayHistory,
+      autoPauseOnLock: s.autoPauseOnLock,
+      autoPauseOnAudioDeviceLost: s.autoPauseOnAudioDeviceLost,
+      autoPauseResumeOnUnlock: s.autoPauseResumeOnUnlock,
     })),
   );
   const updateSettings = useSettings(s => s.update);
@@ -93,6 +99,9 @@ const useSystemSettingsForm = () => {
         password: "",
       },
       reportPlayHistory,
+      autoPauseOnLock,
+      autoPauseOnAudioDeviceLost,
+      autoPauseResumeOnUnlock,
     },
   });
 
@@ -122,6 +131,9 @@ const useSystemSettingsForm = () => {
     });
   }, [
     audioQuality,
+    autoPauseOnAudioDeviceLost,
+    autoPauseOnLock,
+    autoPauseResumeOnUnlock,
     autoStart,
     backgroundColor,
     borderRadius,
