@@ -10,6 +10,94 @@
 > `com.biu.wood3n` 之间不存在自动升级路径，因此版本号不延续旧线反而更准确）。
 > 新条目由 `changelogen` 追加在本注释上方。
 
+## v2.0.1
+
+[compare changes](https://github.com/Leeero/lili/compare/v2.0.0...v2.0.1)
+
+### 🚀 新功能
+
+- **discover:** 把"音乐分区/新碟与新歌"与"卡片/列表"改成 SegmentedControl ([57d3632](https://github.com/Leeero/lili/commit/57d3632))
+- **lyrics:** 字幕降级歌词 ([5b11404](https://github.com/Leeero/lili/commit/5b11404))
+- **chart:** 新增音乐榜单页（单一综合榜） ([c743a1b](https://github.com/Leeero/lili/commit/c743a1b))
+- **library:** 三组拆分 + 未登录降级 ([c6d7991](https://github.com/Leeero/lili/commit/c6d7991))
+- **now-playing:** 分P切换 ([d43127a](https://github.com/Leeero/lili/commit/d43127a))
+- **now-playing:** 无歌词降级展示简介与同 UP 主投稿 ([3cddcac](https://github.com/Leeero/lili/commit/3cddcac))
+- **app:** 移除「稍后播放」页面及配套服务与夹具 ([f31af56](https://github.com/Leeero/lili/commit/f31af56))
+- **discover:** 发现页数据源从分区视频流切换为音乐中心三份数据 ([d7a4d93](https://github.com/Leeero/lili/commit/d7a4d93))
+- **library:** 侧栏菜单显隐改为「我的音乐」条目显隐 ([c2dc473](https://github.com/Leeero/lili/commit/c2dc473))
+- **player:** 历史续播与正在播放页增强 ([4bf68da](https://github.com/Leeero/lili/commit/4bf68da))
+- **social:** 关注与动态页 tab 下沉到内容区并补键盘导航 ([efc09dc](https://github.com/Leeero/lili/commit/efc09dc))
+- **player:** 增强播放栏歌词、点赞与进度交互 ([40b054b](https://github.com/Leeero/lili/commit/40b054b))
+- **favorites:** 支持失效与合集条目并统一收藏数据源 ([5cd51c9](https://github.com/Leeero/lili/commit/5cd51c9))
+- **collection:** 统一收藏夹/合集/系列详情页 ([304232a](https://github.com/Leeero/lili/commit/304232a))
+- **track:** 新增曲目详情页 ([8d5832e](https://github.com/Leeero/lili/commit/8d5832e))
+- **assets:** 增强曲目列表的表头、菜单与状态反馈 ([6a53a1a](https://github.com/Leeero/lili/commit/6a53a1a))
+- **nav:** 二级页父级高亮与音乐库归属分段 ([ba0be19](https://github.com/Leeero/lili/commit/ba0be19))
+- **library:** 按归属重组我的音乐并精简页头 ([b3864ac](https://github.com/Leeero/lili/commit/b3864ac))
+- **search:** 重构搜索结果页 ([15d9240](https://github.com/Leeero/lili/commit/15d9240))
+- **chart:** 重构音乐榜单页 ([838a119](https://github.com/Leeero/lili/commit/838a119))
+- **history:** 重构观看历史页 ([0c77a49](https://github.com/Leeero/lili/commit/0c77a49))
+- **follow:** 重构关注与动态页 ([ee17d56](https://github.com/Leeero/lili/commit/ee17d56))
+- **pages:** 移除重复页头并统一操作栏 ([9cd599b](https://github.com/Leeero/lili/commit/9cd599b))
+- **settings:** 新增自动暂停三项设置 ([966d24b](https://github.com/Leeero/lili/commit/966d24b))
+- **electron:** 转发系统锁屏与休眠事件到渲染端 ([9bbc58f](https://github.com/Leeero/lili/commit/9bbc58f))
+- **player:** 新增幂等 pause 动作与自动暂停判定 ([72fbc32](https://github.com/Leeero/lili/commit/72fbc32))
+- **player:** 音频输出设备断开自动暂停 ([a1bfd9e](https://github.com/Leeero/lili/commit/a1bfd9e))
+- **player:** 锁屏与休眠唤醒自动暂停 ([40b771a](https://github.com/Leeero/lili/commit/40b771a))
+
+### 🩹 修复问题
+
+- **shell:** 错误边界下沉到内容区，页面崩了不再拖垮壳层与登录入口 ([9fd7536](https://github.com/Leeero/lili/commit/9fd7536))
+- **login:** 放行极验脚本域名，风控验证码不再被 CSP 拦 ([751a77e](https://github.com/Leeero/lili/commit/751a77e))
+- **discover:** 切换"音乐分区/新碟与新歌"时不再整页刷新 ([ccc43e5](https://github.com/Leeero/lili/commit/ccc43e5))
+- **discover:** 给卡片/列表根节点留 14px 给滚动条 ([9fc4aab](https://github.com/Leeero/lili/commit/9fc4aab))
+- **assets:** 资产页滚动内容根留 14px，不再被滚动条遮挡 ([7ab45af](https://github.com/Leeero/lili/commit/7ab45af))
+- **chart:** 重写榜单页，修复列表被 content 槽吞掉的问题 ([ade8593](https://github.com/Leeero/lili/commit/ade8593))
+- **now-playing:** 歌词自动滚动跟随高亮行 ([9538a41](https://github.com/Leeero/lili/commit/9538a41))
+- **library:** 移除库页音质偏好药丸并精简导语重复项 ([258637d](https://github.com/Leeero/lili/commit/258637d))
+- **local-music:** 删除按钮名去掉「· 二次确认」后缀 ([f7a8dcc](https://github.com/Leeero/lili/commit/f7a8dcc))
+- **downloads:** 行操作带门控改由 capabilities 驱动并修空态与危险色 ([7f54f28](https://github.com/Leeero/lili/commit/7f54f28))
+
+### 💅 Refactors
+
+- **discover:** 卡片与列表分支共用 DiscoverHeading，两屏页头同源 ([0d9a9d5](https://github.com/Leeero/lili/commit/0d9a9d5))
+- **discover:** 收敛为单一「音乐分区」数据源并移除页头，卡片模式成为唯一视图 ([8d34123](https://github.com/Leeero/lili/commit/8d34123))
+- **layout:** 页面内分段导航从壳层下沉到内容区 ([ac6a040](https://github.com/Leeero/lili/commit/ac6a040))
+
+### 📖 Documentation
+
+- 补充开发者文档索引与项目上下文 ([b64563c](https://github.com/Leeero/lili/commit/b64563c))
+- **design:** 更新 4188 规格锁 ([6f937ab](https://github.com/Leeero/lili/commit/6f937ab))
+- 自动暂停需求清单与技术方案 ([6f2c932](https://github.com/Leeero/lili/commit/6f2c932))
+- 对齐自动暂停的提交切分与实际历史 ([18b7646](https://github.com/Leeero/lili/commit/18b7646))
+- **readme:** 补充本地开发与界面预览，修正过期描述 ([38c94a6](https://github.com/Leeero/lili/commit/38c94a6))
+
+### 🏡 Chore
+
+- **repo:** 忽略本地 pnpm-store 缓存目录 ([916ae96](https://github.com/Leeero/lili/commit/916ae96))
+- 忽略 DSH 视觉插件产物目录 ([48435c1](https://github.com/Leeero/lili/commit/48435c1))
+- 合并 master 并以本分支实现覆盖重复收敛 ([3fa4c20](https://github.com/Leeero/lili/commit/3fa4c20))
+- **assets:** 重截界面截图并移除零引用旧图 ([7852764](https://github.com/Leeero/lili/commit/7852764))
+
+### ✅ Tests
+
+- 清理稍后播放遗留测试并同步壳层契约断言 ([7ad1996](https://github.com/Leeero/lili/commit/7ad1996))
+- 自动暂停策略与设备判定单测 ([a70e6f3](https://github.com/Leeero/lili/commit/a70e6f3))
+
+### 🎨 UI 调整
+
+- **reskin:** 换肤 - 对齐 lili 交互原型深色视觉 ([4b31ea0](https://github.com/Leeero/lili/commit/4b31ea0))
+- **reskin:** DM Mono 改为 base64 内联，构建不再依赖外部 ttf 文件 ([bece90e](https://github.com/Leeero/lili/commit/bece90e))
+- **reskin:** 移除 base64 内联字体，改用系统等宽字体栈 ([648e559](https://github.com/Leeero/lili/commit/648e559))
+- **components:** 细抠组件 - 对齐原型三处关键样式 ([26c0b68](https://github.com/Leeero/lili/commit/26c0b68))
+- **library:** 音乐库统计卡对齐原型 ([07adb2b](https://github.com/Leeero/lili/commit/07adb2b))
+- **library:** 统计卡片与 tabs 下划线槽之间补 10px 呼吸感 ([0eceee0](https://github.com/Leeero/lili/commit/0eceee0))
+
+### ❤️ Contributors
+
+- Lero ([@Leeero](https://github.com/Leeero))
+- Leroli
+
 ## v1.16.0
 
 [compare changes](https://github.com/wood3n/biu/compare/v1.15.0...v1.16.0)
