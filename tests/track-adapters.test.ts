@@ -23,13 +23,14 @@ describe("track adapters", () => {
         bvid: "BVOLD",
         album: "Confessions",
         aid: "10",
-        cover: "music-cover.jpg",
+        // B 站封面实际返回协议相对地址，适配层需补成 https
+        cover: "//i0.hdslb.com/music-cover.jpg",
         score: 212,
         related_archive: {
           aid: "20",
           bvid: "BVNEW",
           cid: "new-cid",
-          cover: "video-cover.jpg",
+          cover: "//i0.hdslb.com/video-cover.jpg",
           title: "【MV】【Mimi Webb】「I Met A Boy」",
           uid: 2,
           username: "fallinforjulia",
@@ -48,7 +49,7 @@ describe("track adapters", () => {
       id: "bilibili-video:BVNEW",
       title: "I Met A Boy",
       album: "Confessions",
-      cover: "music-cover.jpg",
+      cover: "https://i0.hdslb.com/music-cover.jpg",
       creator: { name: "Mimi Webb" },
       sourceRef: { aid: "20", bvid: "BVNEW", cid: "new-cid" },
     });
@@ -73,7 +74,7 @@ describe("track adapters", () => {
           aid: "20",
           bvid: "BVNEW",
           cid: "new-cid",
-          cover: "video-cover.jpg",
+          cover: "//i0.hdslb.com/video-cover.jpg",
           title: "Archive title",
           uid: 2,
           username: "Artist",
@@ -89,7 +90,7 @@ describe("track adapters", () => {
 
     expect(track).toMatchObject({
       title: "Archive title",
-      cover: "video-cover.jpg",
+      cover: "https://i0.hdslb.com/video-cover.jpg",
       creator: { name: "Artist" },
     });
   });
